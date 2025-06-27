@@ -26,7 +26,7 @@ export default function DashboardPage() {
   }
 
   if (!session) {
-    redirect("/auth/login")
+    redirect("/login")
   }
 
   // Mock data for demonstration

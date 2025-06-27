@@ -58,7 +58,7 @@ export default function LoginPage() {
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             Ou{" "}
-            <Link href="/auth/register" className="font-medium text-emerald-600 hover:text-emerald-500">
+            <Link href="/register" className="font-medium text-emerald-600 hover:text-emerald-500">
               crie uma conta nova
             </Link>
           </p>
