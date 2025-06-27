@@ -7,42 +7,71 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Trophy, Target, Clock, TrendingUp, Star, Flame } from "lucide-react"
 
-// Mock data for demonstration
+// Mock data for demonstration with categories
 const mockCategories = [
   { id: 'A', name: 'Categoria A', description: 'Jogadores de alto nível' },
   { id: 'B', name: 'Categoria B', description: 'Jogadores intermediários' },
   { id: 'C', name: 'Categoria C', description: 'Jogadores iniciantes' },
 ]
 
-const mockMatches = [
-  {
-    id: 1,
-    player1: { name: 'Carlos Silva', ranking: 1 },
-    player2: { name: 'João Santos', ranking: 12 },
-    scheduledAt: '2024-01-15T14:00:00Z',
-    status: 'scheduled',
-    round: '1ª Rodada',
-    canPredict: true,
-  },
-  {
-    id: 2,
-    player1: { name: 'Pedro Oliveira', ranking: 3 },
-    player2: { name: 'Lucas Costa', ranking: 8 },
-    scheduledAt: '2024-01-15T16:00:00Z',
-    status: 'scheduled',
-    round: '1ª Rodada',
-    canPredict: true,
-  },
-  {
-    id: 3,
-    player1: { name: 'André Ferreira', ranking: 5 },
-    player2: { name: 'Rafael Lima', ranking: 15 },
-    scheduledAt: '2024-01-16T14:00:00Z',
-    status: 'scheduled',
-    round: '1ª Rodada',
-    canPredict: true,
-  },
-]
+const mockMatchesByCategory = {
+  A: [
+    {
+      id: 1,
+      player1: { name: 'Carlos Silva', ranking: 1 },
+      player2: { name: 'João Santos', ranking: 12 },
+      scheduledAt: '2024-01-15T14:00:00Z',
+      status: 'scheduled',
+      round: '1ª Rodada',
+      canPredict: true,
+      category: 'A',
+    },
+    {
+      id: 2,
+      player1: { name: 'Pedro Oliveira', ranking: 3 },
+      player2: { name: 'Lucas Costa', ranking: 8 },
+      scheduledAt: '2024-01-15T16:00:00Z',
+      status: 'scheduled',
+      round: '1ª Rodada',
+      canPredict: true,
+      category: 'A',
+    },
+  ],
+  B: [
+    {
+      id: 3,
+      player1: { name: 'Thiago Carvalho', ranking: 13 },
+      player2: { name: 'Ricardo Gomes', ranking: 18 },
+      scheduledAt: '2024-01-16T14:00:00Z',
+      status: 'scheduled',
+      round: '1ª Rodada',
+      canPredict: true,
+      category: 'B',
+    },
+    {
+      id: 4,
+      player1: { name: 'Mateus Barbosa', ranking: 15 },
+      player2: { name: 'Leonardo Dias', ranking: 20 },
+      scheduledAt: '2024-01-16T16:00:00Z',
+      status: 'scheduled',
+      round: '1ª Rodada',
+      canPredict: true,
+      category: 'B',
+    },
+  ],
+  C: [
+    {
+      id: 5,
+      player1: { name: 'Julio Cardoso', ranking: 25 },
+      player2: { name: 'Kleber Pinto', ranking: 30 },
+      scheduledAt: '2024-01-17T14:00:00Z',
+      status: 'scheduled',
+      round: '1ª Rodada',
+      canPredict: true,
+      category: 'C',
+    },
+  ]
+}
 
 const mockTournamentBets = [
   { type: 'CHAMPION', label: 'Campeão', points: 25, description: 'Quem será o campeão do torneio?' },
@@ -60,7 +89,7 @@ interface Prediction {
   marginOfVictory?: 'CLOSE' | 'COMFORTABLE'
 }
 
-function MatchPredictionCard({ match }: { match: typeof mockMatches[0] }) {
+function MatchPredictionCard({ match }: { match: typeof mockMatchesByCategory.A[0] }) {
   const [prediction, setPrediction] = useState<Prediction>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -88,15 +117,22 @@ function MatchPredictionCard({ match }: { match: typeof mockMatches[0] }) {
     <Card className="mb-6">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg">
-              {match.player1.name} vs {match.player2.name}
-            </CardTitle>
-            <CardDescription>
-              {match.round} • {formatDate(match.scheduledAt)}
-            </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">
+                {match.player1.name} vs {match.player2.name}
+              </CardTitle>
+              <CardDescription>
+                {match.round} • Categoria {match.category} • {formatDate(match.scheduledAt)}
+              </CardDescription>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline" className="text-xs">
+                Cat. {match.category}
+              </Badge>
+              <Badge variant="secondary">{match.status === 'scheduled' ? 'Agendada' : 'Em Andamento'}</Badge>
+            </div>
           </div>
-          <Badge variant="secondary">{match.status === 'scheduled' ? 'Agendada' : 'Em Andamento'}</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -272,23 +308,33 @@ function MatchPredictionCard({ match }: { match: typeof mockMatches[0] }) {
 
 function TournamentBetsTab() {
   const [selectedBets, setSelectedBets] = useState<Record<string, string>>({})
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('A')
+
+  const getPlayersForCategory = (category: string) => {
+    const matches = mockMatchesByCategory[category as keyof typeof mockMatchesByCategory] || []
+    const players = new Set<string>()
+    matches.forEach(match => {
+      players.add(match.player1.name)
+      players.add(match.player2.name)
+    })
+    return Array.from(players)
+  }
 
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold mb-2">Palpites de Torneio</h2>
         <p className="text-gray-600">
-          Faça seus palpites sobre o torneio antes que ele comece!
+          Faça seus palpites sobre o torneio para cada categoria!
         </p>
       </div>
 
       {/* Category Selection */}
       <Card>
         <CardHeader>
-          <CardTitle>Selecione a Categoria do Torneio</CardTitle>
+          <CardTitle>Selecione a Categoria para Palpites</CardTitle>
           <CardDescription>
-            Escolha em qual categoria você está participando. Cada categoria tem pontuações próprias, mas a pontuação final é geral.
+            Você pode fazer palpites para todas as categorias. Cada categoria tem pontuações próprias, mas a pontuação final é geral.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -308,7 +354,7 @@ function TournamentBetsTab() {
           {selectedCategory && (
             <div className="mt-4 p-3 bg-emerald-50 rounded-lg">
               <p className="text-sm text-emerald-700">
-                ✓ Categoria {selectedCategory} selecionada. Suas pontuações serão calculadas para esta categoria, mas contribuirão para o ranking geral.
+                ✓ Fazendo palpites para Categoria {selectedCategory}. Suas pontuações contribuirão para o ranking geral.
               </p>
             </div>
           )}
@@ -316,35 +362,39 @@ function TournamentBetsTab() {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {mockTournamentBets.map((bet) => (
-          <Card key={bet.type}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{bet.label}</CardTitle>
-                <Badge variant="secondary">{bet.points} pontos</Badge>
-              </div>
-              <CardDescription>{bet.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <select 
-                className="w-full p-2 border rounded-md"
-                value={selectedBets[bet.type] || ''}
-                onChange={(e) => setSelectedBets(prev => ({ ...prev, [bet.type]: e.target.value }))}
-              >
-                <option value="">Selecione um jogador...</option>
-                <option value="carlos">Carlos Silva</option>
-                <option value="joao">João Santos</option>
-                <option value="pedro">Pedro Oliveira</option>
-                {/* Add more players */}
-              </select>
-            </CardContent>
-          </Card>
-        ))}
+        {mockTournamentBets.map((bet) => {
+          const betKey = `${bet.type}_${selectedCategory}`
+          const playersForCategory = getPlayersForCategory(selectedCategory)
+          
+          return (
+            <Card key={betKey}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">{bet.label} - Cat. {selectedCategory}</CardTitle>
+                  <Badge variant="secondary">{bet.points} pontos</Badge>
+                </div>
+                <CardDescription>{bet.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <select 
+                  className="w-full p-2 border rounded-md"
+                  value={selectedBets[betKey] || ''}
+                  onChange={(e) => setSelectedBets(prev => ({ ...prev, [betKey]: e.target.value }))}
+                >
+                  <option value="">Selecione um jogador...</option>
+                  {playersForCategory.map((player) => (
+                    <option key={player} value={player}>{player}</option>
+                  ))}
+                </select>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       <div className="text-center">
         <Button size="lg">
-          Salvar Palpites de Torneio
+          Salvar Palpites de Categoria {selectedCategory}
         </Button>
       </div>
     </div>
@@ -352,6 +402,18 @@ function TournamentBetsTab() {
 }
 
 export default function PredictionsPage() {
+  const [selectedMatchCategory, setSelectedMatchCategory] = useState<'A' | 'B' | 'C' | 'ALL'>('ALL')
+
+  const getMatchesForCategory = () => {
+    if (selectedMatchCategory === 'ALL') {
+      return Object.values(mockMatchesByCategory).flat()
+    } else {
+      return mockMatchesByCategory[selectedMatchCategory] || []
+    }
+  }
+
+  const matchesToShow = getMatchesForCategory()
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -360,7 +422,7 @@ export default function PredictionsPage() {
           Fazer Palpites
         </h1>
         <p className="text-gray-600">
-          Faça seus palpites nas partidas e ganhe pontos pelos acertos
+          Faça seus palpites nas partidas de todas as categorias e ganhe pontos pelos acertos
         </p>
       </div>
 
@@ -415,22 +477,44 @@ export default function PredictionsPage() {
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold mb-2">Próximas Partidas</h2>
             <p className="text-gray-600">
-              Faça palpites específicos sobre cada partida
+              Faça palpites específicos sobre cada partida de todas as categorias
             </p>
           </div>
 
-          {mockMatches.map((match) => (
+          {/* Category Filter for Matches */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-4">Filtrar Partidas por Categoria</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={selectedMatchCategory === 'ALL' ? "default" : "outline"}
+                onClick={() => setSelectedMatchCategory('ALL')}
+              >
+                Todas as Categorias
+              </Button>
+              {['A', 'B', 'C'].map((category) => (
+                <Button
+                  key={category}
+                  variant={selectedMatchCategory === category ? "default" : "outline"}
+                  onClick={() => setSelectedMatchCategory(category as 'A' | 'B' | 'C')}
+                >
+                  Categoria {category}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {matchesToShow.map((match) => (
             <MatchPredictionCard key={match.id} match={match} />
           ))}
 
-          {mockMatches.length === 0 && (
+          {matchesToShow.length === 0 && (
             <div className="text-center py-12">
               <Clock className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 Nenhuma partida disponível
               </h3>
               <p className="text-gray-600">
-                Aguarde novas partidas serem agendadas
+                Aguarde novas partidas serem agendadas para esta categoria
               </p>
             </div>
           )}

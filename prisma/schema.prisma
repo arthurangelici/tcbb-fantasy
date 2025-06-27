@@ -46,6 +46,7 @@ model User {
   password      String?
   role          UserRole  @default(USER)
   points        Int       @default(0)
+  category      TournamentCategory?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -73,6 +74,7 @@ model Player {
   image       String?
   nationality String   @default("Brasil")
   age         Int?
+  category    TournamentCategory
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -88,6 +90,7 @@ model Match {
   id          String      @id @default(cuid())
   player1Id   String
   player2Id   String
+  category    TournamentCategory
   round       TournamentRound
   status      MatchStatus @default(SCHEDULED)
   scheduledAt DateTime?
@@ -140,9 +143,10 @@ model Prediction {
 }
 
 model TournamentBet {
-  id     String @id @default(cuid())
-  userId String
-  type   TournamentBetType
+  id       String @id @default(cuid())
+  userId   String
+  type     TournamentBetType
+  category TournamentCategory?
 
   // Bet fields
   playerId String?
@@ -210,4 +214,10 @@ enum TournamentBetType {
   LONGEST_MATCH
   MOST_ACES
   BEST_COMEBACK
+}
+
+enum TournamentCategory {
+  A
+  B
+  C
 }

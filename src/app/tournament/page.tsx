@@ -5,51 +5,60 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Trophy, Calendar, Users, Target } from "lucide-react"
 
-// Mock tournament data
-const mockTournament = {
-  rounds: [
-    {
-      name: '1ª Rodada',
-      matches: [
-        { id: 1, player1: 'Carlos Silva', player2: 'João Santos', winner: 'Carlos Silva', score: '2-1', completed: true },
-        { id: 2, player1: 'Pedro Oliveira', player2: 'Lucas Costa', winner: 'Pedro Oliveira', score: '2-0', completed: true },
-        { id: 3, player1: 'André Ferreira', player2: 'Rafael Lima', winner: null, score: null, completed: false },
-        { id: 4, player1: 'Bruno Martins', player2: 'Gabriel Rocha', winner: null, score: null, completed: false },
-        { id: 5, player1: 'Felipe Alves', player2: 'Marcos Pereira', winner: null, score: null, completed: false },
-        { id: 6, player1: 'Roberto Souza', player2: 'Diego Nascimento', winner: null, score: null, completed: false },
-        { id: 7, player1: 'Thiago Carvalho', player2: 'Ricardo Gomes', winner: null, score: null, completed: false },
-        { id: 8, player1: 'Mateus Barbosa', player2: 'Leonardo Dias', winner: null, score: null, completed: false },
-      ]
-    },
-    {
-      name: 'Oitavas de Final',
-      matches: [
-        { id: 9, player1: 'Carlos Silva', player2: 'Pedro Oliveira', winner: null, score: null, completed: false },
-        { id: 10, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false },
-        { id: 11, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false },
-        { id: 12, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false },
-      ]
-    },
-    {
-      name: 'Quartas de Final',
-      matches: [
-        { id: 13, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false },
-        { id: 14, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false },
-      ]
-    },
-    {
-      name: 'Semifinais',
-      matches: [
-        { id: 15, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false },
-      ]
-    },
-    {
-      name: 'Final',
-      matches: [
-        { id: 16, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false },
-      ]
-    }
-  ]
+// Mock tournament data with categories
+const mockTournamentData = {
+  A: {
+    rounds: [
+      {
+        name: '1ª Rodada - Categoria A',
+        matches: [
+          { id: 1, player1: 'Carlos Silva', player2: 'João Santos', winner: 'Carlos Silva', score: '2-1', completed: true, category: 'A' },
+          { id: 2, player1: 'Pedro Oliveira', player2: 'Lucas Costa', winner: 'Pedro Oliveira', score: '2-0', completed: true, category: 'A' },
+          { id: 3, player1: 'André Ferreira', player2: 'Rafael Lima', winner: null, score: null, completed: false, category: 'A' },
+          { id: 4, player1: 'Bruno Martins', player2: 'Gabriel Rocha', winner: null, score: null, completed: false, category: 'A' },
+          { id: 5, player1: 'Felipe Alves', player2: 'Marcos Pereira', winner: null, score: null, completed: false, category: 'A' },
+          { id: 6, player1: 'Roberto Souza', player2: 'Diego Nascimento', winner: null, score: null, completed: false, category: 'A' },
+        ]
+      },
+      {
+        name: 'Oitavas de Final - Categoria A',
+        matches: [
+          { id: 7, player1: 'Carlos Silva', player2: 'Pedro Oliveira', winner: null, score: null, completed: false, category: 'A' },
+          { id: 8, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'A' },
+          { id: 9, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'A' },
+        ]
+      }
+    ]
+  },
+  B: {
+    rounds: [
+      {
+        name: '1ª Rodada - Categoria B',
+        matches: [
+          { id: 10, player1: 'Thiago Carvalho', player2: 'Ricardo Gomes', winner: 'Thiago Carvalho', score: '2-0', completed: true, category: 'B' },
+          { id: 11, player1: 'Mateus Barbosa', player2: 'Leonardo Dias', winner: null, score: null, completed: false, category: 'B' },
+          { id: 12, player1: 'Gustavo Melo', player2: 'Henrique Lopes', winner: null, score: null, completed: false, category: 'B' },
+          { id: 13, player1: 'Rodrigo Freitas', player2: 'Vinicius Torres', winner: null, score: null, completed: false, category: 'B' },
+          { id: 14, player1: 'Caio Ribeiro', player2: 'Danilo Castro', winner: null, score: null, completed: false, category: 'B' },
+          { id: 15, player1: 'Fábio Mendes', player2: 'Igor Ramos', winner: null, score: null, completed: false, category: 'B' },
+        ]
+      }
+    ]
+  },
+  C: {
+    rounds: [
+      {
+        name: '1ª Rodada - Categoria C',
+        matches: [
+          { id: 16, player1: 'Julio Cardoso', player2: 'Kleber Pinto', winner: 'Kleber Pinto', score: '2-1', completed: true, category: 'C' },
+          { id: 17, player1: 'Leandro Faria', player2: 'Márcio Teixeira', winner: null, score: null, completed: false, category: 'C' },
+          { id: 18, player1: 'Nathan Correia', player2: 'Otávio Moura', winner: null, score: null, completed: false, category: 'C' },
+          { id: 19, player1: 'Paulo Vieira', player2: 'Renato Campos', winner: null, score: null, completed: false, category: 'C' },
+          { id: 20, player1: 'Sérgio Cunha', player2: 'Tiago Monteiro', winner: null, score: null, completed: false, category: 'C' },
+        ]
+      }
+    ]
+  }
 }
 
 interface Match {
@@ -59,6 +68,7 @@ interface Match {
   winner: string | null
   score: string | null
   completed: boolean
+  category: string
 }
 
 function MatchCard({ match }: { match: Match }) {
@@ -101,17 +111,51 @@ function MatchCard({ match }: { match: Match }) {
 }
 
 export default function TournamentPage() {
+  const [selectedCategory, setSelectedCategory] = useState<'A' | 'B' | 'C' | 'ALL'>('ALL')
   const [selectedRound, setSelectedRound] = useState<string | null>(null)
 
+  // Get tournament data based on selected category
+  const getTournamentData = () => {
+    if (selectedCategory === 'ALL') {
+      // Combine all categories
+      const allRounds = []
+      for (const [, data] of Object.entries(mockTournamentData)) {
+        allRounds.push(...data.rounds)
+      }
+      return { rounds: allRounds }
+    } else {
+      return mockTournamentData[selectedCategory] || { rounds: [] }
+    }
+  }
+
+  const tournamentData = getTournamentData()
+
   const stats = {
-    totalMatches: mockTournament.rounds.reduce((acc, round) => acc + round.matches.length, 0),
-    completedMatches: mockTournament.rounds.reduce((acc, round) => 
-      acc + round.matches.filter(match => match.completed).length, 0
+    totalMatches: Object.values(mockTournamentData).reduce((acc, cat) => 
+      acc + cat.rounds.reduce((roundAcc, round) => roundAcc + round.matches.length, 0), 0
     ),
-    remainingMatches: mockTournament.rounds.reduce((acc, round) => 
-      acc + round.matches.filter(match => !match.completed).length, 0
+    completedMatches: Object.values(mockTournamentData).reduce((acc, cat) => 
+      acc + cat.rounds.reduce((roundAcc, round) => 
+        roundAcc + round.matches.filter(match => match.completed).length, 0
+      ), 0
+    ),
+    remainingMatches: Object.values(mockTournamentData).reduce((acc, cat) => 
+      acc + cat.rounds.reduce((roundAcc, round) => 
+        roundAcc + round.matches.filter(match => !match.completed).length, 0
+      ), 0
     ),
     activePlayers: 35
+  }
+
+  // Category-specific stats
+  const getCategoryStats = (category: 'A' | 'B' | 'C') => {
+    const catData = mockTournamentData[category]
+    return {
+      total: catData.rounds.reduce((acc, round) => acc + round.matches.length, 0),
+      completed: catData.rounds.reduce((acc, round) => 
+        acc + round.matches.filter(match => match.completed).length, 0
+      )
+    }
   }
 
   return (
@@ -122,7 +166,7 @@ export default function TournamentPage() {
           Chaveamento do Torneio
         </h1>
         <p className="text-gray-600">
-          Acompanhe o progresso do torneio interno de tênis do TCBB
+          Acompanhe o progresso do torneio interno de tênis do TCBB por categoria
         </p>
       </div>
 
@@ -166,80 +210,124 @@ export default function TournamentPage() {
         </Card>
       </div>
 
-      {/* Round Filter */}
-      <div className="mb-8">
+      {/* Category Filter */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold mb-4">Filtrar por Categoria</h3>
         <div className="flex flex-wrap gap-2">
           <Button
-            variant={selectedRound === null ? "default" : "outline"}
-            onClick={() => setSelectedRound(null)}
+            variant={selectedCategory === 'ALL' ? "default" : "outline"}
+            onClick={() => setSelectedCategory('ALL')}
           >
-            Todas as Fases
+            Todas as Categorias
           </Button>
-          {mockTournament.rounds.map((round) => (
-            <Button
-              key={round.name}
-              variant={selectedRound === round.name ? "default" : "outline"}
-              onClick={() => setSelectedRound(round.name)}
-            >
-              {round.name}
-            </Button>
-          ))}
+          {['A', 'B', 'C'].map((category) => {
+            const catStats = getCategoryStats(category as 'A' | 'B' | 'C')
+            return (
+              <Button
+                key={category}
+                variant={selectedCategory === category ? "default" : "outline"}
+                onClick={() => setSelectedCategory(category as 'A' | 'B' | 'C')}
+                className="relative"
+              >
+                Categoria {category}
+                <span className="ml-2 text-xs bg-white bg-opacity-20 px-1 rounded">
+                  {catStats.completed}/{catStats.total}
+                </span>
+              </Button>
+            )
+          })}
         </div>
       </div>
 
-      {/* Tournament Bracket */}
-      <div className="space-y-12">
-        {mockTournament.rounds
-          .filter(round => selectedRound === null || round.name === selectedRound)
-          .map((round) => (
-            <div key={round.name}>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+      {/* Round Filter */}
+      {tournamentData.rounds.length > 0 && (
+        <div className="mb-8">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={selectedRound === null ? "default" : "outline"}
+              onClick={() => setSelectedRound(null)}
+            >
+              Todas as Fases
+            </Button>
+            {tournamentData.rounds.map((round) => (
+              <Button
+                key={round.name}
+                variant={selectedRound === round.name ? "default" : "outline"}
+                onClick={() => setSelectedRound(round.name)}
+              >
                 {round.name}
-              </h2>
-              <div className="flex flex-wrap justify-center gap-6">
-                {round.matches.map((match) => (
-                  <MatchCard key={match.id} match={match} />
-                ))}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tournament Bracket */}
+      {tournamentData.rounds.length > 0 ? (
+        <div className="space-y-12">
+          {tournamentData.rounds
+            .filter(round => selectedRound === null || round.name === selectedRound)
+            .map((round) => (
+              <div key={round.name}>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+                  {round.name}
+                </h2>
+                <div className="flex flex-wrap justify-center gap-6">
+                  {round.matches.map((match) => (
+                    <MatchCard key={match.id} match={match} />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-      </div>
+            ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Nenhuma partida encontrada
+          </h3>
+          <p className="text-gray-600">
+            Selecione uma categoria para ver as partidas
+          </p>
+        </div>
+      )}
 
-      {/* Tournament Progress */}
-      <div className="mt-12">
-        <Card>
-          <CardHeader>
-            <CardTitle>Progresso do Torneio</CardTitle>
-            <CardDescription>
-              Acompanhe o andamento de cada fase
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {mockTournament.rounds.map((round) => {
-                const completedInRound = round.matches.filter(match => match.completed).length
-                const totalInRound = round.matches.length
-                const progressPercentage = (completedInRound / totalInRound) * 100
+      {/* Tournament Progress by Category */}
+      {selectedCategory === 'ALL' && (
+        <div className="mt-12">
+          <Card>
+            <CardHeader>
+              <CardTitle>Progresso por Categoria</CardTitle>
+              <CardDescription>
+                Acompanhe o andamento de cada categoria
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {['A', 'B', 'C'].map((category) => {
+                  const catStats = getCategoryStats(category as 'A' | 'B' | 'C')
+                  const progressPercentage = catStats.total > 0 ? (catStats.completed / catStats.total) * 100 : 0
 
-                return (
-                  <div key={round.name} className="flex items-center space-x-4">
-                    <div className="w-32 text-sm font-medium">{round.name}</div>
-                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${progressPercentage}%` }}
-                      />
+                  return (
+                    <div key={category} className="flex items-center space-x-4">
+                      <div className="w-32 text-sm font-medium">Categoria {category}</div>
+                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${progressPercentage}%` }}
+                        />
+                      </div>
+                      <div className="text-sm text-gray-600 w-20">
+                        {catStats.completed}/{catStats.total}
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600 w-20">
-                      {completedInRound}/{totalInRound}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

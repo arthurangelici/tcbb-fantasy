@@ -3,44 +3,50 @@ import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
-// Brazilian tennis player names
-const playerNames = [
-  'Carlos Silva',
-  'João Santos',
-  'Pedro Oliveira',
-  'Lucas Costa',
-  'André Ferreira',
-  'Rafael Lima',
-  'Bruno Martins',
-  'Gabriel Rocha',
-  'Felipe Alves',
-  'Marcos Pereira',
-  'Roberto Souza',
-  'Diego Nascimento',
-  'Thiago Carvalho',
-  'Ricardo Gomes',
-  'Mateus Barbosa',
-  'Leonardo Dias',
-  'Gustavo Melo',
-  'Henrique Lopes',
-  'Rodrigo Freitas',
-  'Vinicius Torres',
-  'Caio Ribeiro',
-  'Danilo Castro',
-  'Fábio Mendes',
-  'Igor Ramos',
-  'Julio Cardoso',
-  'Kleber Pinto',
-  'Leandro Faria',
-  'Márcio Teixeira',
-  'Nathan Correia',
-  'Otávio Moura',
-  'Paulo Vieira',
-  'Renato Campos',
-  'Sérgio Cunha',
-  'Tiago Monteiro',
-  'Wagner Araújo'
-]
+// Brazilian tennis player names by category
+const playersByCategory = {
+  A: [
+    'Carlos Silva',
+    'João Santos', 
+    'Pedro Oliveira',
+    'Lucas Costa',
+    'André Ferreira',
+    'Rafael Lima',
+    'Bruno Martins',
+    'Gabriel Rocha',
+    'Felipe Alves',
+    'Marcos Pereira',
+    'Roberto Souza',
+    'Diego Nascimento'
+  ],
+  B: [
+    'Thiago Carvalho',
+    'Ricardo Gomes',
+    'Mateus Barbosa',
+    'Leonardo Dias',
+    'Gustavo Melo',
+    'Henrique Lopes',
+    'Rodrigo Freitas',
+    'Vinicius Torres',
+    'Caio Ribeiro',
+    'Danilo Castro',
+    'Fábio Mendes',
+    'Igor Ramos'
+  ],
+  C: [
+    'Julio Cardoso',
+    'Kleber Pinto',
+    'Leandro Faria',
+    'Márcio Teixeira',
+    'Nathan Correia',
+    'Otávio Moura',
+    'Paulo Vieira',
+    'Renato Campos',
+    'Sérgio Cunha',
+    'Tiago Monteiro',
+    'Wagner Araújo'
+  ]
+}
 
 async function main() {
   console.log('🌱 Seeding database...')
@@ -57,8 +63,9 @@ async function main() {
     },
   })
 
-  // Create test users
+  // Create test users with random categories
   const testUsers = []
+  const categoryOptions = ['A', 'B', 'C']
   for (let i = 1; i <= 10; i++) {
     const password = await bcrypt.hash(`user${i}123`, 12)
     const user = await prisma.user.create({
@@ -68,55 +75,72 @@ async function main() {
         password,
         role: 'USER',
         points: Math.floor(Math.random() * 500),
+        category: categoryOptions[Math.floor(Math.random() * categoryOptions.length)] as any,
       },
     })
     testUsers.push(user)
   }
 
-  // Create players
+  // Create players by category
   const players = []
-  for (let i = 0; i < playerNames.length; i++) {
-    const player = await prisma.player.create({
-      data: {
-        name: playerNames[i],
-        ranking: i + 1,
-        age: Math.floor(Math.random() * 20) + 20, // Age between 20-40
-        nationality: 'Brasil',
-      },
-    })
-    players.push(player)
+  let rankingCounter = 1
+  
+  for (const [category, names] of Object.entries(playersByCategory)) {
+    for (let i = 0; i < names.length; i++) {
+      const player = await prisma.player.create({
+        data: {
+          name: names[i],
+          ranking: rankingCounter++,
+          age: Math.floor(Math.random() * 20) + 20, // Age between 20-40
+          nationality: 'Brasil',
+          category: category as any,
+        },
+      })
+      players.push(player)
+    }
   }
 
-  // Create some matches for first round (32 players = 16 first round matches)
+  // Create matches for each category (first round)
   const matches = []
-  for (let i = 0; i < 16; i++) {
-    const player1 = players[i * 2]
-    const player2 = players[i * 2 + 1]
+  const tournamentCategories = ['A', 'B', 'C']
+  
+  for (const category of tournamentCategories) {
+    const categoryPlayers = players.filter(p => p.category === category)
+    const matchCount = Math.floor(categoryPlayers.length / 2)
     
-    const match = await prisma.match.create({
-      data: {
-        player1Id: player1.id,
-        player2Id: player2.id,
-        round: 'FIRST_ROUND',
-        status: i < 8 ? 'FINISHED' : 'SCHEDULED',
-        scheduledAt: new Date(Date.now() + i * 24 * 60 * 60 * 1000), // Spread over days
-        ...(i < 8 && {
-          // Add results for first 8 matches
-          finishedAt: new Date(Date.now() - (8 - i) * 24 * 60 * 60 * 1000),
-          winner: Math.random() > 0.5 ? 'player1' : 'player2',
-          player1Sets: Math.random() > 0.5 ? 2 : Math.random() > 0.5 ? 1 : 0,
-          player2Sets: Math.random() > 0.5 ? 2 : Math.random() > 0.5 ? 1 : 0,
-          hadTiebreak: Math.random() > 0.7,
-          totalDuration: Math.floor(Math.random() * 120) + 60, // 60-180 minutes
-        }),
-      },
-    })
-    matches.push(match)
+    for (let i = 0; i < matchCount; i++) {
+      const player1 = categoryPlayers[i * 2]
+      const player2 = categoryPlayers[i * 2 + 1]
+      
+      if (player1 && player2) {
+        const match = await prisma.match.create({
+          data: {
+            player1Id: player1.id,
+            player2Id: player2.id,
+            category: category as any,
+            round: 'FIRST_ROUND',
+            status: i < 3 ? 'FINISHED' : 'SCHEDULED', // First 3 matches per category are finished
+            scheduledAt: new Date(Date.now() + i * 24 * 60 * 60 * 1000), // Spread over days
+            ...(i < 3 && {
+              // Add results for first 3 matches per category
+              finishedAt: new Date(Date.now() - (3 - i) * 24 * 60 * 60 * 1000),
+              winner: Math.random() > 0.5 ? 'player1' : 'player2',
+              player1Sets: Math.random() > 0.5 ? 2 : Math.random() > 0.5 ? 1 : 0,
+              player2Sets: Math.random() > 0.5 ? 2 : Math.random() > 0.5 ? 1 : 0,
+              hadTiebreak: Math.random() > 0.7,
+              totalDuration: Math.floor(Math.random() * 120) + 60, // 60-180 minutes
+            }),
+          },
+        })
+        matches.push(match)
+      }
+    }
   }
 
   // Create some predictions for test users
   for (const user of testUsers.slice(0, 5)) {
-    for (const match of matches.slice(0, 8)) {
+    const finishedMatches = matches.filter(match => match.status === 'FINISHED')
+    for (const match of finishedMatches) {
       await prisma.prediction.create({
         data: {
           userId: user.id,
@@ -133,28 +157,28 @@ async function main() {
     }
   }
 
-  // Create some tournament bets
+  // Create tournament bets for each category
   const tournamentBetTypes = [
     'CHAMPION',
-    'RUNNER_UP',
+    'RUNNER_UP', 
     'SEMIFINALIST',
-    'QUARTERFINALIST',
-    'BIGGEST_UPSET',
-    'LONGEST_MATCH',
-    'MOST_ACES',
-    'BEST_COMEBACK'
+    'QUARTERFINALIST'
   ]
 
   for (const user of testUsers.slice(0, 5)) {
-    for (const betType of tournamentBetTypes.slice(0, 4)) {
-      await prisma.tournamentBet.create({
-        data: {
-          userId: user.id,
-          type: betType as any,
-          playerId: players[Math.floor(Math.random() * players.length)].id,
-          pointsEarned: 0,
-        },
-      })
+    for (const category of tournamentCategories) {
+      const categoryPlayers = players.filter(p => p.category === category)
+      for (const betType of tournamentBetTypes) {
+        await prisma.tournamentBet.create({
+          data: {
+            userId: user.id,
+            type: betType as any,
+            category: category as any,
+            playerId: categoryPlayers[Math.floor(Math.random() * categoryPlayers.length)].id,
+            pointsEarned: 0,
+          },
+        })
+      }
     }
   }
 
@@ -174,10 +198,10 @@ async function main() {
   console.log('✅ Database seeded successfully!')
   console.log(`📊 Created:`)
   console.log(`   - 1 admin user (admin@tcbb.com / admin123)`)
-  console.log(`   - 10 test users (user1@tcbb.com / user1123, etc.)`)
-  console.log(`   - 35 players`)
-  console.log(`   - 16 first round matches (8 with results)`)
-  console.log(`   - Sample predictions and tournament bets`)
+  console.log(`   - 10 test users with categories (user1@tcbb.com / user1123, etc.)`)
+  console.log(`   - ${Object.values(playersByCategory).flat().length} players across 3 categories`)
+  console.log(`   - ${matches.length} first round matches across all categories`)
+  console.log(`   - Sample predictions and tournament bets for each category`)
   console.log(`   - User favorites`)
 }
 
