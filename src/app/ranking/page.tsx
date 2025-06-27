@@ -6,151 +6,199 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Trophy, TrendingUp, Target, Star, Medal, Crown, Award } from "lucide-react"
 
-// Mock ranking data with categories
-const mockRankingByCategory = {
-  general: [
-    {
-      id: 1,
-      name: 'João Silva',
-      email: 'joao@tcbb.com',
-      points: 347,
-      correctPredictions: 23,
-      totalPredictions: 45,
-      successRate: 51.1,
-      streak: 3,
-      position: 1,
-      previousPosition: 2,
-      trend: 'up',
-      category: 'A'
+// Mock ranking data - all players with their points by category
+const mockRankingData: PlayerData[] = [
+  {
+    id: 1,
+    name: 'João Silva',
+    email: 'joao@tcbb.com',
+    category: 'A',
+    pointsByCategory: {
+      general: 347,
+      A: 167,
+      B: 89,
+      C: 91
     },
-    {
-      id: 2,
-      name: 'Maria Santos',
-      email: 'maria@tcbb.com',
-      points: 335,
-      correctPredictions: 21,
-      totalPredictions: 42,
-      successRate: 50.0,
-      streak: 1,
-      position: 2,
-      previousPosition: 1,
-      trend: 'down',
-      category: 'B'
+    predictionsByCategory: {
+      general: { correct: 23, total: 45 },
+      A: { correct: 12, total: 18 },
+      B: { correct: 6, total: 14 },
+      C: { correct: 5, total: 13 }
     },
-    {
-      id: 3,
-      name: 'Pedro Costa',
-      email: 'pedro@tcbb.com',
-      points: 298,
-      correctPredictions: 19,
-      totalPredictions: 39,
-      successRate: 48.7,
-      streak: 2,
-      position: 3,
-      previousPosition: 4,
-      trend: 'up',
-      category: 'A'
+    streak: 3
+  },
+  {
+    id: 2,
+    name: 'Maria Santos',
+    email: 'maria@tcbb.com',
+    category: 'B',
+    pointsByCategory: {
+      general: 335,
+      A: 145,
+      B: 120,
+      C: 70
     },
-    {
-      id: 4,
-      name: 'Ana Oliveira',
-      email: 'ana@tcbb.com',
-      points: 267,
-      correctPredictions: 18,
-      totalPredictions: 41,
-      successRate: 43.9,
-      streak: 0,
-      position: 4,
-      previousPosition: 3,
-      trend: 'down',
-      category: 'C'
+    predictionsByCategory: {
+      general: { correct: 21, total: 42 },
+      A: { correct: 8, total: 16 },
+      B: { correct: 9, total: 15 },
+      C: { correct: 4, total: 11 }
     },
-    {
-      id: 5,
-      name: 'Carlos Ferreira',
-      email: 'carlos@tcbb.com',
-      points: 245,
-      correctPredictions: 16,
-      totalPredictions: 38,
-      successRate: 42.1,
-      streak: 1,
-      position: 5,
-      previousPosition: 5,
-      trend: 'stable',
-      category: 'B'
+    streak: 1
+  },
+  {
+    id: 3,
+    name: 'Pedro Costa',
+    email: 'pedro@tcbb.com',
+    category: 'A',
+    pointsByCategory: {
+      general: 298,
+      A: 156,
+      B: 78,
+      C: 64
     },
-    {
-      id: 6,
-      name: 'Luisa Lima',
-      email: 'luisa@tcbb.com',
-      points: 223,
-      correctPredictions: 15,
-      totalPredictions: 36,
-      successRate: 41.7,
-      streak: 2,
-      position: 6,
-      previousPosition: 7,
-      trend: 'up',
-      category: 'A'
+    predictionsByCategory: {
+      general: { correct: 19, total: 39 },
+      A: { correct: 11, total: 17 },
+      B: { correct: 5, total: 12 },
+      C: { correct: 3, total: 10 }
     },
-    {
-      id: 7,
-      name: 'Bruno Martins',
-      email: 'bruno@tcbb.com',
-      points: 201,
-      correctPredictions: 14,
-      totalPredictions: 35,
-      successRate: 40.0,
-      streak: 0,
-      position: 7,
-      previousPosition: 6,
-      trend: 'down',
-      category: 'C'
+    streak: 2
+  },
+  {
+    id: 4,
+    name: 'Ana Oliveira',
+    email: 'ana@tcbb.com',
+    category: 'C',
+    pointsByCategory: {
+      general: 267,
+      A: 89,
+      B: 67,
+      C: 111
     },
-    {
-      id: 8,
-      name: 'Gabriela Rocha',
-      email: 'gabi@tcbb.com',
-      points: 189,
-      correctPredictions: 13,
-      totalPredictions: 33,
-      successRate: 39.4,
-      streak: 1,
-      position: 8,
-      previousPosition: 8,
-      trend: 'stable',
-      category: 'B'
+    predictionsByCategory: {
+      general: { correct: 18, total: 41 },
+      A: { correct: 6, total: 15 },
+      B: { correct: 4, total: 13 },
+      C: { correct: 8, total: 13 }
     },
-    {
-      id: 9,
-      name: 'Felipe Alves',
-      email: 'felipe@tcbb.com',
-      points: 167,
-      correctPredictions: 12,
-      totalPredictions: 32,
-      successRate: 37.5,
-      streak: 3,
-      position: 9,
-      previousPosition: 10,
-      trend: 'up',
-      category: 'A'
+    streak: 0
+  },
+  {
+    id: 5,
+    name: 'Carlos Ferreira',
+    email: 'carlos@tcbb.com',
+    category: 'B',
+    pointsByCategory: {
+      general: 245,
+      A: 78,
+      B: 134,
+      C: 33
     },
-    {
-      id: 10,
-      name: 'Marcos Pereira',
-      email: 'marcos@tcbb.com',
-      points: 145,
-      correctPredictions: 11,
-      totalPredictions: 31,
-      successRate: 35.5,
-      streak: 0,
-      position: 10,
-      previousPosition: 9,
-      trend: 'down',
-      category: 'C'
+    predictionsByCategory: {
+      general: { correct: 16, total: 38 },
+      A: { correct: 5, total: 14 },
+      B: { correct: 8, total: 14 },
+      C: { correct: 3, total: 10 }
     },
-  ]
-}
+    streak: 1
+  },
+  {
+    id: 6,
+    name: 'Luisa Lima',
+    email: 'luisa@tcbb.com',
+    category: 'A',
+    pointsByCategory: {
+      general: 223,
+      A: 123,
+      B: 56,
+      C: 44
+    },
+    predictionsByCategory: {
+      general: { correct: 15, total: 36 },
+      A: { correct: 9, total: 16 },
+      B: { correct: 4, total: 11 },
+      C: { correct: 2, total: 9 }
+    },
+    streak: 2
+  },
+  {
+    id: 7,
+    name: 'Bruno Martins',
+    email: 'bruno@tcbb.com',
+    category: 'C',
+    pointsByCategory: {
+      general: 201,
+      A: 56,
+      B: 45,
+      C: 100
+    },
+    predictionsByCategory: {
+      general: { correct: 14, total: 35 },
+      A: { correct: 4, total: 13 },
+      B: { correct: 3, total: 11 },
+      C: { correct: 7, total: 11 }
+    },
+    streak: 0
+  },
+  {
+    id: 8,
+    name: 'Gabriela Rocha',
+    email: 'gabi@tcbb.com',
+    category: 'B',
+    pointsByCategory: {
+      general: 189,
+      A: 67,
+      B: 89,
+      C: 33
+    },
+    predictionsByCategory: {
+      general: { correct: 13, total: 33 },
+      A: { correct: 4, total: 12 },
+      B: { correct: 6, total: 12 },
+      C: { correct: 3, total: 9 }
+    },
+    streak: 1
+  },
+  {
+    id: 9,
+    name: 'Felipe Alves',
+    email: 'felipe@tcbb.com',
+    category: 'A',
+    pointsByCategory: {
+      general: 167,
+      A: 98,
+      B: 34,
+      C: 35
+    },
+    predictionsByCategory: {
+      general: { correct: 12, total: 32 },
+      A: { correct: 7, total: 14 },
+      B: { correct: 3, total: 10 },
+      C: { correct: 2, total: 8 }
+    },
+    streak: 3
+  },
+  {
+    id: 10,
+    name: 'Marcos Pereira',
+    email: 'marcos@tcbb.com',
+    category: 'C',
+    pointsByCategory: {
+      general: 145,
+      A: 34,
+      B: 23,
+      C: 88
+    },
+    predictionsByCategory: {
+      general: { correct: 11, total: 31 },
+      A: { correct: 3, total: 11 },
+      B: { correct: 2, total: 9 },
+      C: { correct: 6, total: 11 }
+    },
+    streak: 0
+  },
+]
 
 const getRankingIcon = (position: number) => {
   switch (position) {
@@ -187,15 +235,50 @@ const getTrendColor = (trend: string) => {
   }
 }
 
-function PlayerRankingCard({ player, currentUser = false }: { player: typeof mockRankingByCategory.general[0], currentUser?: boolean }) {
+interface PlayerData {
+  id: number;
+  name: string;
+  email: string;
+  category: 'A' | 'B' | 'C';
+  pointsByCategory: {
+    general: number;
+    A: number;
+    B: number;
+    C: number;
+  };
+  predictionsByCategory: {
+    general: { correct: number; total: number };
+    A: { correct: number; total: number };
+    B: { correct: number; total: number };
+    C: { correct: number; total: number };
+  };
+  streak: number;
+  position?: number;
+  previousPosition?: number;
+  trend?: 'up' | 'down' | 'stable';
+}
+
+function PlayerRankingCard({ 
+  player, 
+  currentUser = false, 
+  categoryFilter = 'general' 
+}: { 
+  player: PlayerData, 
+  currentUser?: boolean, 
+  categoryFilter?: 'general' | 'A' | 'B' | 'C'
+}) {
+  const points = player.pointsByCategory[categoryFilter] || 0
+  const predictions = player.predictionsByCategory[categoryFilter] || { correct: 0, total: 0 }
+  const successRate = predictions.total > 0 ? (predictions.correct / predictions.total) * 100 : 0
+
   return (
     <Card className={`${currentUser ? 'border-emerald-200 bg-emerald-50' : ''}`}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              {getRankingIcon(player.position)}
-              <span className="text-2xl font-bold">{player.position}</span>
+              {getRankingIcon(player.position || 0)}
+              <span className="text-2xl font-bold">{player.position || 0}</span>
             </div>
             
             <div className="flex-1">
@@ -215,7 +298,7 @@ function PlayerRankingCard({ player, currentUser = false }: { player: typeof moc
                 <div className="flex items-center space-x-1">
                   <Target className="h-4 w-4 text-gray-400" />
                   <span className="text-sm text-gray-600">
-                    {player.correctPredictions}/{player.totalPredictions} ({player.successRate.toFixed(1)}%)
+                    {predictions.correct}/{predictions.total} ({successRate.toFixed(1)}%)
                   </span>
                 </div>
                 {player.streak > 0 && (
@@ -232,14 +315,17 @@ function PlayerRankingCard({ player, currentUser = false }: { player: typeof moc
 
           <div className="text-right">
             <div className="text-2xl font-bold text-emerald-600">
-              {player.points}
+              {points}
             </div>
             <div className="text-sm text-gray-600">pontos</div>
-            <div className={`flex items-center justify-end space-x-1 mt-1 ${getTrendColor(player.trend)}`}>
-              {getTrendIcon(player.trend)}
+            <div className={`flex items-center justify-end space-x-1 mt-1 ${getTrendColor(player.trend || 'stable')}`}>
+              {getTrendIcon(player.trend || 'stable')}
               <span className="text-xs">
-                {player.trend === 'up' ? '+' : player.trend === 'down' ? '-' : ''}
-                {Math.abs(player.position - player.previousPosition) || ''}
+                {categoryFilter !== 'general' && (
+                  <span className="text-xs text-blue-600">
+                    Cat. {categoryFilter}
+                  </span>
+                )}
               </span>
             </div>
           </div>
@@ -258,19 +344,20 @@ export default function RankingPage() {
   
   // Get ranking data based on category filter
   const getRankingData = () => {
-    const baseRanking = mockRankingByCategory.general
+    // Sort players by points in the selected category
+    const sortedPlayers = [...mockRankingData].sort((a, b) => {
+      const pointsA = a.pointsByCategory[categoryFilter] || 0
+      const pointsB = b.pointsByCategory[categoryFilter] || 0
+      return pointsB - pointsA
+    })
     
-    if (categoryFilter === 'general') {
-      return baseRanking
-    } else {
-      // Filter by category and rerank
-      const categoryPlayers = baseRanking.filter(p => p.category === categoryFilter)
-      return categoryPlayers.map((player, index) => ({
-        ...player,
-        position: index + 1,
-        previousPosition: index + 1 // Simplified for demo
-      }))
-    }
+    // Add position and trend information
+    return sortedPlayers.map((player, index) => ({
+      ...player,
+      position: index + 1,
+      previousPosition: index + 1, // Simplified for demo
+      trend: 'stable' as const
+    }))
   }
   
   const rankingData = getRankingData()
@@ -282,8 +369,12 @@ export default function RankingPage() {
 
   const topStats = {
     totalPlayers: rankingData.length,
-    averagePoints: Math.round(rankingData.reduce((acc, p) => acc + p.points, 0) / rankingData.length),
-    averageSuccessRate: Number((rankingData.reduce((acc, p) => acc + p.successRate, 0) / rankingData.length).toFixed(1)),
+    averagePoints: Math.round(rankingData.reduce((acc, p) => acc + (p.pointsByCategory[categoryFilter] || 0), 0) / rankingData.length),
+    averageSuccessRate: Number((rankingData.reduce((acc, p) => {
+      const predictions = p.predictionsByCategory[categoryFilter] || { correct: 0, total: 0 }
+      const rate = predictions.total > 0 ? (predictions.correct / predictions.total) * 100 : 0
+      return acc + rate
+    }, 0) / rankingData.length).toFixed(1)),
     topPlayer: rankingData[0]
   }
 
@@ -295,7 +386,10 @@ export default function RankingPage() {
           Ranking {categoryFilter === 'general' ? 'Geral' : `Categoria ${categoryFilter}`}
         </h1>
         <p className="text-gray-600">
-          Veja como você se compara com outros participantes {categoryFilter === 'general' ? 'em geral' : `na categoria ${categoryFilter}`}
+          {categoryFilter === 'general' 
+            ? 'Veja como você se compara com outros participantes considerando todas as categorias'
+            : `Ranking baseado apenas em pontos obtidos na categoria ${categoryFilter}`
+          }
         </p>
       </div>
 
@@ -322,7 +416,7 @@ export default function RankingPage() {
         {categoryFilter !== 'general' && (
           <div className="mt-2 p-3 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-700">
-              ℹ️ Este ranking mostra apenas os participantes da Categoria {categoryFilter}, mas as pontuações vêm de todas as categorias.
+              ℹ️ Este ranking considera apenas pontos obtidos em palpites da Categoria {categoryFilter}. Todos os participantes aparecem, ordenados por sua pontuação nesta categoria específica.
             </p>
           </div>
         )}
@@ -361,7 +455,7 @@ export default function RankingPage() {
           <CardContent className="flex items-center p-6">
             <Crown className="h-8 w-8 text-yellow-500 mr-4" />
             <div>
-              <div className="text-2xl font-bold">{topStats.topPlayer?.points || 0}</div>
+              <div className="text-2xl font-bold">{topStats.topPlayer?.pointsByCategory[categoryFilter] || 0}</div>
               <p className="text-sm text-gray-600">Líder</p>
             </div>
           </CardContent>
@@ -396,7 +490,7 @@ export default function RankingPage() {
               </div>
               <div className="bg-gray-100 p-4 rounded-lg">
                 <div className="text-lg font-semibold">{filteredRanking[1].name}</div>
-                <div className="text-2xl font-bold text-gray-600">{filteredRanking[1].points}</div>
+                <div className="text-2xl font-bold text-gray-600">{filteredRanking[1].pointsByCategory[categoryFilter]}</div>
                 <div className="text-sm text-gray-500">2º lugar</div>
               </div>
             </div>
@@ -408,7 +502,7 @@ export default function RankingPage() {
               </div>
               <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
                 <div className="text-lg font-semibold">{filteredRanking[0].name}</div>
-                <div className="text-2xl font-bold text-yellow-600">{filteredRanking[0].points}</div>
+                <div className="text-2xl font-bold text-yellow-600">{filteredRanking[0].pointsByCategory[categoryFilter]}</div>
                 <div className="text-sm text-yellow-600">1º lugar</div>
               </div>
             </div>
@@ -420,7 +514,7 @@ export default function RankingPage() {
               </div>
               <div className="bg-amber-50 p-4 rounded-lg">
                 <div className="text-lg font-semibold">{filteredRanking[2].name}</div>
-                <div className="text-2xl font-bold text-amber-600">{filteredRanking[2].points}</div>
+                <div className="text-2xl font-bold text-amber-600">{filteredRanking[2].pointsByCategory[categoryFilter]}</div>
                 <div className="text-sm text-amber-600">3º lugar</div>
               </div>
             </div>
@@ -435,6 +529,7 @@ export default function RankingPage() {
             key={player.id} 
             player={player} 
             currentUser={player.id === currentUserId}
+            categoryFilter={categoryFilter}
           />
         ))}
       </div>

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Trophy, Calendar, Users, Target } from "lucide-react"
 
-// Mock tournament data with categories
+// Mock tournament data with complete bracket structure for all categories
 const mockTournamentData = {
   A: {
     rounds: [
@@ -14,18 +14,37 @@ const mockTournamentData = {
         matches: [
           { id: 1, player1: 'Carlos Silva', player2: 'João Santos', winner: 'Carlos Silva', score: '2-1', completed: true, category: 'A' },
           { id: 2, player1: 'Pedro Oliveira', player2: 'Lucas Costa', winner: 'Pedro Oliveira', score: '2-0', completed: true, category: 'A' },
-          { id: 3, player1: 'André Ferreira', player2: 'Rafael Lima', winner: null, score: null, completed: false, category: 'A' },
-          { id: 4, player1: 'Bruno Martins', player2: 'Gabriel Rocha', winner: null, score: null, completed: false, category: 'A' },
-          { id: 5, player1: 'Felipe Alves', player2: 'Marcos Pereira', winner: null, score: null, completed: false, category: 'A' },
-          { id: 6, player1: 'Roberto Souza', player2: 'Diego Nascimento', winner: null, score: null, completed: false, category: 'A' },
+          { id: 3, player1: 'André Ferreira', player2: 'Rafael Lima', winner: 'André Ferreira', score: '2-1', completed: true, category: 'A' },
+          { id: 4, player1: 'Bruno Martins', player2: 'Gabriel Rocha', winner: 'Bruno Martins', score: '2-0', completed: true, category: 'A' },
+          { id: 5, player1: 'Felipe Alves', player2: 'Marcos Pereira', winner: 'Felipe Alves', score: '2-1', completed: true, category: 'A' },
+          { id: 6, player1: 'Roberto Souza', player2: 'Diego Nascimento', winner: 'Roberto Souza', score: '2-0', completed: true, category: 'A' },
         ]
       },
       {
         name: 'Oitavas de Final - Categoria A',
         matches: [
-          { id: 7, player1: 'Carlos Silva', player2: 'Pedro Oliveira', winner: null, score: null, completed: false, category: 'A' },
-          { id: 8, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'A' },
-          { id: 9, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'A' },
+          { id: 7, player1: 'Carlos Silva', player2: 'Pedro Oliveira', winner: 'Carlos Silva', score: '2-1', completed: true, category: 'A' },
+          { id: 8, player1: 'André Ferreira', player2: 'Bruno Martins', winner: 'André Ferreira', score: '2-0', completed: true, category: 'A' },
+          { id: 9, player1: 'Felipe Alves', player2: 'Roberto Souza', winner: null, score: null, completed: false, category: 'A' },
+        ]
+      },
+      {
+        name: 'Quartas de Final - Categoria A',
+        matches: [
+          { id: 10, player1: 'Carlos Silva', player2: 'André Ferreira', winner: null, score: null, completed: false, category: 'A' },
+          { id: 11, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'A' },
+        ]
+      },
+      {
+        name: 'Semifinais - Categoria A',
+        matches: [
+          { id: 12, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'A' },
+        ]
+      },
+      {
+        name: 'Final - Categoria A',
+        matches: [
+          { id: 13, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'A' },
         ]
       }
     ]
@@ -35,12 +54,39 @@ const mockTournamentData = {
       {
         name: '1ª Rodada - Categoria B',
         matches: [
-          { id: 10, player1: 'Thiago Carvalho', player2: 'Ricardo Gomes', winner: 'Thiago Carvalho', score: '2-0', completed: true, category: 'B' },
-          { id: 11, player1: 'Mateus Barbosa', player2: 'Leonardo Dias', winner: null, score: null, completed: false, category: 'B' },
-          { id: 12, player1: 'Gustavo Melo', player2: 'Henrique Lopes', winner: null, score: null, completed: false, category: 'B' },
-          { id: 13, player1: 'Rodrigo Freitas', player2: 'Vinicius Torres', winner: null, score: null, completed: false, category: 'B' },
-          { id: 14, player1: 'Caio Ribeiro', player2: 'Danilo Castro', winner: null, score: null, completed: false, category: 'B' },
-          { id: 15, player1: 'Fábio Mendes', player2: 'Igor Ramos', winner: null, score: null, completed: false, category: 'B' },
+          { id: 20, player1: 'Thiago Carvalho', player2: 'Ricardo Gomes', winner: 'Thiago Carvalho', score: '2-0', completed: true, category: 'B' },
+          { id: 21, player1: 'Mateus Barbosa', player2: 'Leonardo Dias', winner: 'Mateus Barbosa', score: '2-1', completed: true, category: 'B' },
+          { id: 22, player1: 'Gustavo Melo', player2: 'Henrique Lopes', winner: 'Gustavo Melo', score: '2-0', completed: true, category: 'B' },
+          { id: 23, player1: 'Rodrigo Freitas', player2: 'Vinicius Torres', winner: 'Rodrigo Freitas', score: '2-1', completed: true, category: 'B' },
+          { id: 24, player1: 'Caio Ribeiro', player2: 'Danilo Castro', winner: 'Caio Ribeiro', score: '2-0', completed: true, category: 'B' },
+          { id: 25, player1: 'Fábio Mendes', player2: 'Igor Ramos', winner: 'Fábio Mendes', score: '2-1', completed: true, category: 'B' },
+        ]
+      },
+      {
+        name: 'Oitavas de Final - Categoria B',
+        matches: [
+          { id: 26, player1: 'Thiago Carvalho', player2: 'Mateus Barbosa', winner: 'Thiago Carvalho', score: '2-0', completed: true, category: 'B' },
+          { id: 27, player1: 'Gustavo Melo', player2: 'Rodrigo Freitas', winner: null, score: null, completed: false, category: 'B' },
+          { id: 28, player1: 'Caio Ribeiro', player2: 'Fábio Mendes', winner: null, score: null, completed: false, category: 'B' },
+        ]
+      },
+      {
+        name: 'Quartas de Final - Categoria B',
+        matches: [
+          { id: 29, player1: 'Thiago Carvalho', player2: 'TBD', winner: null, score: null, completed: false, category: 'B' },
+          { id: 30, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'B' },
+        ]
+      },
+      {
+        name: 'Semifinais - Categoria B',
+        matches: [
+          { id: 31, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'B' },
+        ]
+      },
+      {
+        name: 'Final - Categoria B',
+        matches: [
+          { id: 32, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'B' },
         ]
       }
     ]
@@ -50,11 +96,38 @@ const mockTournamentData = {
       {
         name: '1ª Rodada - Categoria C',
         matches: [
-          { id: 16, player1: 'Julio Cardoso', player2: 'Kleber Pinto', winner: 'Kleber Pinto', score: '2-1', completed: true, category: 'C' },
-          { id: 17, player1: 'Leandro Faria', player2: 'Márcio Teixeira', winner: null, score: null, completed: false, category: 'C' },
-          { id: 18, player1: 'Nathan Correia', player2: 'Otávio Moura', winner: null, score: null, completed: false, category: 'C' },
-          { id: 19, player1: 'Paulo Vieira', player2: 'Renato Campos', winner: null, score: null, completed: false, category: 'C' },
-          { id: 20, player1: 'Sérgio Cunha', player2: 'Tiago Monteiro', winner: null, score: null, completed: false, category: 'C' },
+          { id: 40, player1: 'Julio Cardoso', player2: 'Kleber Pinto', winner: 'Kleber Pinto', score: '2-1', completed: true, category: 'C' },
+          { id: 41, player1: 'Leandro Faria', player2: 'Márcio Teixeira', winner: 'Leandro Faria', score: '2-0', completed: true, category: 'C' },
+          { id: 42, player1: 'Nathan Correia', player2: 'Otávio Moura', winner: 'Nathan Correia', score: '2-1', completed: true, category: 'C' },
+          { id: 43, player1: 'Paulo Vieira', player2: 'Renato Campos', winner: 'Paulo Vieira', score: '2-0', completed: true, category: 'C' },
+          { id: 44, player1: 'Sérgio Cunha', player2: 'Tiago Monteiro', winner: 'Sérgio Cunha', score: '2-1', completed: true, category: 'C' },
+        ]
+      },
+      {
+        name: 'Oitavas de Final - Categoria C',
+        matches: [
+          { id: 45, player1: 'Kleber Pinto', player2: 'Leandro Faria', winner: 'Kleber Pinto', score: '2-0', completed: true, category: 'C' },
+          { id: 46, player1: 'Nathan Correia', player2: 'Paulo Vieira', winner: null, score: null, completed: false, category: 'C' },
+          { id: 47, player1: 'Sérgio Cunha', player2: 'Wagner Araújo', winner: null, score: null, completed: false, category: 'C' },
+        ]
+      },
+      {
+        name: 'Quartas de Final - Categoria C',
+        matches: [
+          { id: 48, player1: 'Kleber Pinto', player2: 'TBD', winner: null, score: null, completed: false, category: 'C' },
+          { id: 49, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'C' },
+        ]
+      },
+      {
+        name: 'Semifinais - Categoria C',
+        matches: [
+          { id: 50, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'C' },
+        ]
+      },
+      {
+        name: 'Final - Categoria C',
+        matches: [
+          { id: 51, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'C' },
         ]
       }
     ]
