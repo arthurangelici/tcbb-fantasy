@@ -54,7 +54,6 @@ model User {
   sessions       Session[]
   predictions    Prediction[]
   tournamentBets TournamentBet[]
-  favorites      UserFavorite[]
 
   @@map("users")
 }
@@ -80,7 +79,6 @@ model Player {
 
   matchesAsPlayer1 Match[] @relation("Player1Matches")
   matchesAsPlayer2 Match[] @relation("Player2Matches")
-  favorites        UserFavorite[]
   tournamentBets   TournamentBet[]
 
   @@map("players")
@@ -162,22 +160,8 @@ model TournamentBet {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   player Player? @relation(fields: [playerId], references: [id])
 
-  @@unique([userId, type])
+  @@unique([userId, type, category])
   @@map("tournament_bets")
-}
-
-model UserFavorite {
-  id       String @id @default(cuid())
-  userId   String
-  playerId String
-
-  createdAt DateTime @default(now())
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, playerId])
-  @@map("user_favorites")
 }
 
 enum UserRole {

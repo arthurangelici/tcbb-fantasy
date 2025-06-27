@@ -182,19 +182,6 @@ async function main() {
     }
   }
 
-  // Create some favorites
-  for (const user of testUsers.slice(0, 3)) {
-    const randomPlayers = players.sort(() => 0.5 - Math.random()).slice(0, 3)
-    for (const player of randomPlayers) {
-      await prisma.userFavorite.create({
-        data: {
-          userId: user.id,
-          playerId: player.id,
-        },
-      })
-    }
-  }
-
   console.log('✅ Database seeded successfully!')
   console.log(`📊 Created:`)
   console.log(`   - 1 admin user (admin@tcbb.com / admin123)`)
@@ -202,7 +189,6 @@ async function main() {
   console.log(`   - ${Object.values(playersByCategory).flat().length} players across 3 categories`)
   console.log(`   - ${matches.length} first round matches across all categories`)
   console.log(`   - Sample predictions and tournament bets for each category`)
-  console.log(`   - User favorites`)
 }
 
 main()
