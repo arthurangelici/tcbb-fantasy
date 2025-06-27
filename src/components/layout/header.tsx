@@ -32,9 +32,7 @@ export function Header() {
             <Link href="/tournament" className="text-gray-700 hover:text-emerald-600 transition-colors">
               Chaveamento
             </Link>
-            <Link href="/players" className="text-gray-700 hover:text-emerald-600 transition-colors">
-              Jogadores
-            </Link>
+
             <Link href="/predictions" className="text-gray-700 hover:text-emerald-600 transition-colors">
               Palpites
             </Link>
@@ -103,13 +101,7 @@ export function Header() {
               >
                 Chaveamento
               </Link>
-              <Link 
-                href="/players" 
-                className="text-gray-700 hover:text-emerald-600 transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Jogadores
-              </Link>
+
               <Link 
                 href="/predictions" 
                 className="text-gray-700 hover:text-emerald-600 transition-colors"

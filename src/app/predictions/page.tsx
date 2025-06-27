@@ -8,6 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Trophy, Target, Clock, TrendingUp, Star, Flame } from "lucide-react"
 
 // Mock data for demonstration
+const mockCategories = [
+  { id: 'A', name: 'Categoria A', description: 'Jogadores de alto nível' },
+  { id: 'B', name: 'Categoria B', description: 'Jogadores intermediários' },
+  { id: 'C', name: 'Categoria C', description: 'Jogadores iniciantes' },
+]
+
 const mockMatches = [
   {
     id: 1,
@@ -43,10 +49,6 @@ const mockTournamentBets = [
   { type: 'RUNNER_UP', label: 'Vice-campeão', points: 15, description: 'Quem chegará à final mas não ganhará?' },
   { type: 'SEMIFINALIST', label: 'Semifinalista', points: 10, description: 'Escolha um jogador que chegará às semifinais' },
   { type: 'QUARTERFINALIST', label: 'Quartas de Final', points: 5, description: 'Escolha um jogador que chegará às quartas' },
-  { type: 'BIGGEST_UPSET', label: 'Maior Zebra', points: 12, description: 'Qual será a maior surpresa do torneio?' },
-  { type: 'LONGEST_MATCH', label: 'Partida Mais Longa', points: 10, description: 'Qual partida durará mais tempo?' },
-  { type: 'MOST_ACES', label: 'Mais Aces', points: 8, description: 'Quem fará mais aces no torneio?' },
-  { type: 'BEST_COMEBACK', label: 'Melhor Comeback', points: 8, description: 'Quem fará a melhor virada?' },
 ]
 
 interface Prediction {
@@ -270,6 +272,7 @@ function MatchPredictionCard({ match }: { match: typeof mockMatches[0] }) {
 
 function TournamentBetsTab() {
   const [selectedBets, setSelectedBets] = useState<Record<string, string>>({})
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
 
   return (
     <div className="space-y-6">
@@ -279,6 +282,38 @@ function TournamentBetsTab() {
           Faça seus palpites sobre o torneio antes que ele comece!
         </p>
       </div>
+
+      {/* Category Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Selecione a Categoria do Torneio</CardTitle>
+          <CardDescription>
+            Escolha em qual categoria você está participando. Cada categoria tem pontuações próprias, mas a pontuação final é geral.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {mockCategories.map((category) => (
+              <Button
+                key={category.id}
+                variant={selectedCategory === category.id ? 'default' : 'outline'}
+                onClick={() => setSelectedCategory(category.id)}
+                className="h-auto flex-col p-4"
+              >
+                <div className="text-lg font-semibold">{category.name}</div>
+                <div className="text-sm opacity-70 mt-1">{category.description}</div>
+              </Button>
+            ))}
+          </div>
+          {selectedCategory && (
+            <div className="mt-4 p-3 bg-emerald-50 rounded-lg">
+              <p className="text-sm text-emerald-700">
+                ✓ Categoria {selectedCategory} selecionada. Suas pontuações serão calculadas para esta categoria, mas contribuirão para o ranking geral.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {mockTournamentBets.map((bet) => (
