@@ -250,7 +250,7 @@ function PlayerRankingCard({ player, currentUser = false }: { player: typeof moc
 }
 
 export default function RankingPage() {
-  const [filter, setFilter] = useState<'all' | 'top10' | 'friends'>('all')
+  const [filter, setFilter] = useState<'all' | 'top10'>('all')
   const [categoryFilter, setCategoryFilter] = useState<'general' | 'A' | 'B' | 'C'>('general')
   
   // Mock current user
@@ -277,7 +277,6 @@ export default function RankingPage() {
   
   const filteredRanking = rankingData.filter(player => {
     if (filter === 'top10') return player.position <= 10
-    if (filter === 'friends') return [1, 3, 5, 7].includes(player.id) // Mock friends
     return true
   })
 
@@ -382,12 +381,6 @@ export default function RankingPage() {
           onClick={() => setFilter('top10')}
         >
           Top 10
-        </Button>
-        <Button
-          variant={filter === 'friends' ? 'default' : 'outline'}
-          onClick={() => setFilter('friends')}
-        >
-          Amigos
         </Button>
       </div>
 
