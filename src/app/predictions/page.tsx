@@ -58,7 +58,8 @@ function MatchPredictionCard({ match }: { match: Match }) {
         },
         body: JSON.stringify({
           matchId: match.id,
-          userId: session.user.id,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          userId: (session.user as any).id,
           prediction
         })
       })
@@ -358,13 +359,6 @@ export default function PredictionsPage() {
     successRate: 0
   })
 
-  useEffect(() => {
-    fetchPredictionsData()
-    if (session?.user?.email) {
-      fetchUserStats()
-    }
-  }, [session, selectedMatchCategory, fetchPredictionsData])
-
   const fetchPredictionsData = useCallback(async () => {
     try {
       setLoading(true)
@@ -399,6 +393,13 @@ export default function PredictionsPage() {
       console.error('Error fetching user stats:', error)
     }
   }
+
+  useEffect(() => {
+    fetchPredictionsData()
+    if (session?.user?.email) {
+      fetchUserStats()
+    }
+  }, [session, selectedMatchCategory, fetchPredictionsData])
 
   const getMatchesForCategory = () => {
     if (selectedMatchCategory === 'ALL') {

@@ -157,10 +157,6 @@ export default function RankingPage() {
   const [stats, setStats] = useState<RankingStats | null>(null)
   const [loading, setLoading] = useState(true)
   
-  useEffect(() => {
-    fetchRanking()
-  }, [categoryFilter, fetchRanking])
-
   const fetchRanking = useCallback(async () => {
     try {
       setLoading(true)
@@ -176,15 +172,19 @@ export default function RankingPage() {
       setLoading(false)
     }
   }, [categoryFilter])
+
+  useEffect(() => {
+    fetchRanking()
+  }, [categoryFilter, fetchRanking])
   
   const filteredRanking = ranking.filter(player => {
-    if (filter === 'top10') return player.position <= 10
+    if (filter === 'top10') return player.position && player.position <= 10
     return true
   })
 
   // Get current user ID for highlighting
   const currentUserId = session?.user?.email ? 
-    ranking.find(p => p.email === session.user.email)?.id : null
+    ranking.find(p => p.email === session.user?.email)?.id : null
 
   if (loading) {
     return (

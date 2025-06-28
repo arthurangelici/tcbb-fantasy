@@ -39,7 +39,8 @@ export function Header() {
             <Link href="/ranking" className="text-gray-700 hover:text-emerald-600 transition-colors">
               Ranking
             </Link>
-            {session?.user?.role === "ADMIN" && (
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {(session?.user as any)?.role === "ADMIN" && (
               <Link href="/admin" className="text-gray-700 hover:text-emerald-600 transition-colors">
                 Admin
               </Link>
@@ -53,7 +54,7 @@ export function Header() {
             ) : session ? (
               <div className="flex items-center space-x-2">
                 <span className="hidden sm:inline text-sm text-gray-600">
-                  Olá, {session.user.name || session.user.email}
+                  Olá, {session.user?.name || session.user?.email}
                 </span>
                 <Button
                   variant="ghost"
@@ -121,7 +122,8 @@ export function Header() {
               >
                 Ranking
               </Link>
-              {session?.user?.role === "ADMIN" && (
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {(session?.user as any)?.role === "ADMIN" && (
                 <Link 
                   href="/admin" 
                   className="text-gray-700 hover:text-emerald-600 transition-colors"
