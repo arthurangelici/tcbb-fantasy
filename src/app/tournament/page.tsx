@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Trophy, Calendar, Users, Target } from "lucide-react"
@@ -87,9 +87,9 @@ export default function TournamentPage() {
 
   useEffect(() => {
     fetchTournamentData()
-  }, [selectedCategory])
+  }, [selectedCategory, fetchTournamentData])
 
-  const fetchTournamentData = async () => {
+  const fetchTournamentData = useCallback(async () => {
     try {
       setLoading(true)
       const categoryParam = selectedCategory === 'ALL' ? '' : `?category=${selectedCategory}`
@@ -105,7 +105,7 @@ export default function TournamentPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedCategory])
 
   // Get tournament data based on selected category
   const getTournamentData = () => {

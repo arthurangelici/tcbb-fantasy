@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -490,7 +490,7 @@ export default function AdminPage() {
     totalPredictions: 0
   })
 
-  const checkAdminAccess = async () => {
+  const checkAdminAccess = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/matches')
       if (!response.ok) {
@@ -499,7 +499,7 @@ export default function AdminPage() {
     } catch {
       router.push('/dashboard')
     }
-  }
+  }, [router])
 
   const fetchStats = async () => {
     try {
@@ -540,7 +540,7 @@ export default function AdminPage() {
     }
 
     initializeAdmin()
-  }, [session, status, router])
+  }, [session, status, router, checkAdminAccess])
 
   if (status === 'loading') {
     return (

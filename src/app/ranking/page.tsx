@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -159,9 +159,9 @@ export default function RankingPage() {
   
   useEffect(() => {
     fetchRanking()
-  }, [categoryFilter])
+  }, [categoryFilter, fetchRanking])
 
-  const fetchRanking = async () => {
+  const fetchRanking = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch(`/api/ranking?category=${categoryFilter}`)
@@ -175,7 +175,7 @@ export default function RankingPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [categoryFilter])
   
   const filteredRanking = ranking.filter(player => {
     if (filter === 'top10') return player.position <= 10

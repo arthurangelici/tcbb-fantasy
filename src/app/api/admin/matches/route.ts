@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { TournamentCategory, TournamentRound } from '@prisma/client'
 
 // Get all matches for admin
 export async function GET() {
@@ -36,7 +35,7 @@ export async function GET() {
     // Format matches for admin interface
     const formattedMatches = matches.map(match => {
       // Map database round enum to display names
-      const roundNames: Record<TournamentRound, string> = {
+      const roundNames: Record<string, string> = {
         'FIRST_ROUND': '1ª Rodada',
         'ROUND_OF_16': 'Oitavas de Final', 
         'QUARTERFINALS': 'Quartas de Final',
@@ -105,7 +104,7 @@ export async function POST(request: NextRequest) {
     let player1 = await prisma.player.findFirst({
       where: { 
         name: player1Name,
-        category: category as TournamentCategory
+        category: category as 'A' | 'B' | 'C'
       }
     })
 
@@ -121,7 +120,7 @@ export async function POST(request: NextRequest) {
           name: player1Name,
           ranking: nextRanking,
           nationality: 'Brasil',
-          category: category as TournamentCategory,
+          category: category as 'A' | 'B' | 'C',
           age: 25 // Default age
         }
       })
@@ -130,7 +129,7 @@ export async function POST(request: NextRequest) {
     let player2 = await prisma.player.findFirst({
       where: { 
         name: player2Name,
-        category: category as TournamentCategory
+        category: category as 'A' | 'B' | 'C'
       }
     })
 
@@ -145,7 +144,7 @@ export async function POST(request: NextRequest) {
           name: player2Name,
           ranking: nextRanking,
           nationality: 'Brasil',
-          category: category as TournamentCategory,
+          category: category as 'A' | 'B' | 'C',
           age: 25 // Default age
         }
       })
@@ -156,8 +155,8 @@ export async function POST(request: NextRequest) {
       data: {
         player1Id: player1.id,
         player2Id: player2.id,
-        category: category as TournamentCategory,
-        round: round as TournamentRound,
+        category: category as 'A' | 'B' | 'C',
+        round: round as 'FIRST_ROUND' | 'ROUND_OF_16' | 'QUARTERFINALS' | 'SEMIFINALS' | 'FINAL',
         status: 'SCHEDULED',
         scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date()
       },
@@ -168,7 +167,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Format match for response
-    const roundNames: Record<TournamentRound, string> = {
+    const roundNames: Record<string, string> = {
       'FIRST_ROUND': '1ª Rodada',
       'ROUND_OF_16': 'Oitavas de Final', 
       'QUARTERFINALS': 'Quartas de Final',
