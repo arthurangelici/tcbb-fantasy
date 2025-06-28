@@ -3,10 +3,22 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
+// Type for the session with user data
+type SessionWithUser = {
+  user: {
+    id: string
+    email: string
+    name?: string | null
+    image?: string | null
+    role: string
+  }
+  expires: string
+}
+
 // Get all matches for admin
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as SessionWithUser | null
     
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -33,7 +45,8 @@ export async function GET() {
     })
 
     // Format matches for admin interface
-    const formattedMatches = matches.map(match => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const formattedMatches = matches.map((match: any) => {
       // Map database round enum to display names
       const roundNames: Record<string, string> = {
         'FIRST_ROUND': '1ª Rodada',
@@ -70,7 +83,7 @@ export async function GET() {
 // Create new match
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as SessionWithUser | null
     
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -201,7 +214,7 @@ export async function POST(request: NextRequest) {
 // Update match result
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as SessionWithUser | null
     
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
