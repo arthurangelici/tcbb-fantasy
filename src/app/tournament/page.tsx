@@ -1,91 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Trophy, Calendar, Users, Target } from "lucide-react"
-
-// Mock tournament data with simplified bracket structure (only quarterfinals, semifinals, finals)
-const mockTournamentData = {
-  A: {
-    rounds: [
-      {
-        name: 'Quartas de Final - Categoria A',
-        matches: [
-          { id: 10, player1: 'Carlos Silva', player2: 'André Ferreira', winner: 'Carlos Silva', score: '2-1', completed: true, category: 'A' },
-          { id: 11, player1: 'Felipe Alves', player2: 'Roberto Souza', winner: 'Felipe Alves', score: '2-0', completed: true, category: 'A' },
-          { id: 12, player1: 'Bruno Martins', player2: 'João Santos', winner: null, score: null, completed: false, category: 'A' },
-          { id: 13, player1: 'Pedro Oliveira', player2: 'Lucas Costa', winner: null, score: null, completed: false, category: 'A' },
-        ]
-      },
-      {
-        name: 'Semifinais - Categoria A',
-        matches: [
-          { id: 14, player1: 'Carlos Silva', player2: 'Felipe Alves', winner: null, score: null, completed: false, category: 'A' },
-          { id: 15, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'A' },
-        ]
-      },
-      {
-        name: 'Final - Categoria A',
-        matches: [
-          { id: 16, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'A' },
-        ]
-      }
-    ]
-  },
-  B: {
-    rounds: [
-      {
-        name: 'Quartas de Final - Categoria B',
-        matches: [
-          { id: 20, player1: 'Thiago Carvalho', player2: 'Mateus Barbosa', winner: 'Thiago Carvalho', score: '2-0', completed: true, category: 'B' },
-          { id: 21, player1: 'Gustavo Melo', player2: 'Rodrigo Freitas', winner: 'Gustavo Melo', score: '2-1', completed: true, category: 'B' },
-          { id: 22, player1: 'Caio Ribeiro', player2: 'Fábio Mendes', winner: null, score: null, completed: false, category: 'B' },
-          { id: 23, player1: 'Leonardo Dias', player2: 'Ricardo Gomes', winner: null, score: null, completed: false, category: 'B' },
-        ]
-      },
-      {
-        name: 'Semifinais - Categoria B',
-        matches: [
-          { id: 24, player1: 'Thiago Carvalho', player2: 'Gustavo Melo', winner: null, score: null, completed: false, category: 'B' },
-          { id: 25, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'B' },
-        ]
-      },
-      {
-        name: 'Final - Categoria B',
-        matches: [
-          { id: 26, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'B' },
-        ]
-      }
-    ]
-  },
-  C: {
-    rounds: [
-      {
-        name: 'Quartas de Final - Categoria C',
-        matches: [
-          { id: 30, player1: 'Kleber Pinto', player2: 'Leandro Faria', winner: 'Kleber Pinto', score: '2-0', completed: true, category: 'C' },
-          { id: 31, player1: 'Nathan Correia', player2: 'Paulo Vieira', winner: 'Nathan Correia', score: '2-1', completed: true, category: 'C' },
-          { id: 32, player1: 'Sérgio Cunha', player2: 'Wagner Araújo', winner: null, score: null, completed: false, category: 'C' },
-          { id: 33, player1: 'Julio Cardoso', player2: 'Márcio Teixeira', winner: null, score: null, completed: false, category: 'C' },
-        ]
-      },
-      {
-        name: 'Semifinais - Categoria C',
-        matches: [
-          { id: 34, player1: 'Kleber Pinto', player2: 'Nathan Correia', winner: null, score: null, completed: false, category: 'C' },
-          { id: 35, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'C' },
-        ]
-      },
-      {
-        name: 'Final - Categoria C',
-        matches: [
-          { id: 36, player1: 'TBD', player2: 'TBD', winner: null, score: null, completed: false, category: 'C' },
-        ]
-      }
-    ]
-  }
-}
 
 interface Match {
   id: number
@@ -95,6 +13,29 @@ interface Match {
   score: string | null
   completed: boolean
   category: string
+}
+
+interface TournamentData {
+  [category: string]: {
+    rounds: Array<{
+      name: string
+      matches: Match[]
+    }>
+  }
+}
+
+interface TournamentStats {
+  totalMatches: number
+  completedMatches: number
+  remainingMatches: number
+  activePlayers: number
+}
+
+interface CategoryStats {
+  [category: string]: {
+    total: number
+    completed: number
+  }
 }
 
 function MatchCard({ match }: { match: Match }) {
@@ -139,49 +80,74 @@ function MatchCard({ match }: { match: Match }) {
 export default function TournamentPage() {
   const [selectedCategory, setSelectedCategory] = useState<'A' | 'B' | 'C' | 'ALL'>('ALL')
   const [selectedRound, setSelectedRound] = useState<string | null>(null)
+  const [tournamentData, setTournamentData] = useState<TournamentData>({})
+  const [stats, setStats] = useState<TournamentStats | null>(null)
+  const [categoryStats, setCategoryStats] = useState<CategoryStats>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchTournamentData()
+  }, [selectedCategory])
+
+  const fetchTournamentData = async () => {
+    try {
+      setLoading(true)
+      const categoryParam = selectedCategory === 'ALL' ? '' : `?category=${selectedCategory}`
+      const response = await fetch(`/api/tournament${categoryParam}`)
+      if (response.ok) {
+        const data = await response.json()
+        setTournamentData(data.tournamentData)
+        setStats(data.stats)
+        setCategoryStats(data.categoryStats)
+      }
+    } catch (error) {
+      console.error('Error fetching tournament data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Get tournament data based on selected category
   const getTournamentData = () => {
     if (selectedCategory === 'ALL') {
       // Combine all categories
       const allRounds = []
-      for (const [, data] of Object.entries(mockTournamentData)) {
+      for (const [, data] of Object.entries(tournamentData)) {
         allRounds.push(...data.rounds)
       }
       return { rounds: allRounds }
     } else {
-      return mockTournamentData[selectedCategory] || { rounds: [] }
+      return tournamentData[selectedCategory] || { rounds: [] }
     }
   }
 
-  const tournamentData = getTournamentData()
+  const currentTournamentData = getTournamentData()
 
-  const stats = {
-    totalMatches: Object.values(mockTournamentData).reduce((acc, cat) => 
-      acc + cat.rounds.reduce((roundAcc, round) => roundAcc + round.matches.length, 0), 0
-    ),
-    completedMatches: Object.values(mockTournamentData).reduce((acc, cat) => 
-      acc + cat.rounds.reduce((roundAcc, round) => 
-        roundAcc + round.matches.filter(match => match.completed).length, 0
-      ), 0
-    ),
-    remainingMatches: Object.values(mockTournamentData).reduce((acc, cat) => 
-      acc + cat.rounds.reduce((roundAcc, round) => 
-        roundAcc + round.matches.filter(match => !match.completed).length, 0
-      ), 0
-    ),
-    activePlayers: 35
-  }
-
-  // Category-specific stats
-  const getCategoryStats = (category: 'A' | 'B' | 'C') => {
-    const catData = mockTournamentData[category]
-    return {
-      total: catData.rounds.reduce((acc, round) => acc + round.matches.length, 0),
-      completed: catData.rounds.reduce((acc, round) => 
-        acc + round.matches.filter(match => match.completed).length, 0
-      )
-    }
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/2 mb-6"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+          <div className="space-y-8">
+            {[...Array(3)].map((_, i) => (
+              <div key={i}>
+                <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+                <div className="flex gap-4">
+                  {[...Array(4)].map((_, j) => (
+                    <div key={j} className="w-64 h-32 bg-gray-200 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -197,44 +163,46 @@ export default function TournamentPage() {
       </div>
 
       {/* Tournament Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardContent className="flex items-center p-6">
-            <Trophy className="h-8 w-8 text-emerald-600 mr-4" />
-            <div>
-              <div className="text-2xl font-bold">{stats.totalMatches}</div>
-              <p className="text-sm text-gray-600">Total de Partidas</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center p-6">
-            <Target className="h-8 w-8 text-blue-600 mr-4" />
-            <div>
-              <div className="text-2xl font-bold">{stats.completedMatches}</div>
-              <p className="text-sm text-gray-600">Finalizadas</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center p-6">
-            <Calendar className="h-8 w-8 text-orange-600 mr-4" />
-            <div>
-              <div className="text-2xl font-bold">{stats.remainingMatches}</div>
-              <p className="text-sm text-gray-600">Restantes</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center p-6">
-            <Users className="h-8 w-8 text-purple-600 mr-4" />
-            <div>
-              <div className="text-2xl font-bold">{stats.activePlayers}</div>
-              <p className="text-sm text-gray-600">Participantes</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardContent className="flex items-center p-6">
+              <Trophy className="h-8 w-8 text-emerald-600 mr-4" />
+              <div>
+                <div className="text-2xl font-bold">{stats.totalMatches}</div>
+                <p className="text-sm text-gray-600">Total de Partidas</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex items-center p-6">
+              <Target className="h-8 w-8 text-blue-600 mr-4" />
+              <div>
+                <div className="text-2xl font-bold">{stats.completedMatches}</div>
+                <p className="text-sm text-gray-600">Finalizadas</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex items-center p-6">
+              <Calendar className="h-8 w-8 text-orange-600 mr-4" />
+              <div>
+                <div className="text-2xl font-bold">{stats.remainingMatches}</div>
+                <p className="text-sm text-gray-600">Restantes</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex items-center p-6">
+              <Users className="h-8 w-8 text-purple-600 mr-4" />
+              <div>
+                <div className="text-2xl font-bold">{stats.activePlayers}</div>
+                <p className="text-sm text-gray-600">Participantes</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Category Filter */}
       <div className="mb-6">
@@ -247,7 +215,7 @@ export default function TournamentPage() {
             Todas as Categorias
           </Button>
           {['A', 'B', 'C'].map((category) => {
-            const catStats = getCategoryStats(category as 'A' | 'B' | 'C')
+            const catStats = categoryStats[category] || { total: 0, completed: 0 }
             return (
               <Button
                 key={category}
@@ -266,7 +234,7 @@ export default function TournamentPage() {
       </div>
 
       {/* Round Filter */}
-      {tournamentData.rounds.length > 0 && (
+      {currentTournamentData.rounds.length > 0 && (
         <div className="mb-8">
           <div className="flex flex-wrap gap-2">
             <Button
@@ -275,7 +243,7 @@ export default function TournamentPage() {
             >
               Todas as Fases
             </Button>
-            {tournamentData.rounds.map((round) => (
+            {currentTournamentData.rounds.map((round) => (
               <Button
                 key={round.name}
                 variant={selectedRound === round.name ? "default" : "outline"}
@@ -289,9 +257,9 @@ export default function TournamentPage() {
       )}
 
       {/* Tournament Bracket */}
-      {tournamentData.rounds.length > 0 ? (
+      {currentTournamentData.rounds.length > 0 ? (
         <div className="space-y-12">
-          {tournamentData.rounds
+          {currentTournamentData.rounds
             .filter(round => selectedRound === null || round.name === selectedRound)
             .map((round) => (
               <div key={round.name}>
@@ -319,7 +287,7 @@ export default function TournamentPage() {
       )}
 
       {/* Tournament Progress by Category */}
-      {selectedCategory === 'ALL' && (
+      {selectedCategory === 'ALL' && Object.keys(categoryStats).length > 0 && (
         <div className="mt-12">
           <Card>
             <CardHeader>
@@ -331,7 +299,7 @@ export default function TournamentPage() {
             <CardContent>
               <div className="space-y-4">
                 {['A', 'B', 'C'].map((category) => {
-                  const catStats = getCategoryStats(category as 'A' | 'B' | 'C')
+                  const catStats = categoryStats[category] || { total: 0, completed: 0 }
                   const progressPercentage = catStats.total > 0 ? (catStats.completed / catStats.total) * 100 : 0
 
                   return (

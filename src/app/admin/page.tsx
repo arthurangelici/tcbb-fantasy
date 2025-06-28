@@ -11,106 +11,65 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Users, Trophy, Calendar, BarChart3, Database, Lock } from "lucide-react"
 
-// Mock data for admin - Enhanced with bracket structure (quarterfinals, semifinals, finals only)
-const mockMatches = [
-  // Category A - Quarterfinals
-  {
-    id: 10,
-    player1: 'Carlos Silva',
-    player2: 'André Ferreira',
-    round: 'Quartas de Final',
-    category: 'A',
-    status: 'finished',
-    scheduledAt: '2024-01-20T14:00:00Z',
-    winner: 'Carlos Silva',
-    score: '2-1'
-  },
-  {
-    id: 11,
-    player1: 'Felipe Alves',
-    player2: 'Roberto Souza',
-    round: 'Quartas de Final',
-    category: 'A',
-    status: 'finished',
-    scheduledAt: '2024-01-20T16:00:00Z',
-    winner: 'Felipe Alves',
-    score: '2-0'
-  },
-  {
-    id: 12,
-    player1: 'Bruno Martins',
-    player2: 'João Santos',
-    round: 'Quartas de Final',
-    category: 'A',
-    status: 'scheduled',
-    scheduledAt: '2024-01-21T14:00:00Z'
-  },
-  {
-    id: 13,
-    player1: 'Pedro Oliveira',
-    player2: 'Lucas Costa',
-    round: 'Quartas de Final',
-    category: 'A',
-    status: 'scheduled',
-    scheduledAt: '2024-01-21T16:00:00Z'
-  },
-  // Category A - Semifinals
-  {
-    id: 14,
-    player1: 'Carlos Silva',
-    player2: 'Felipe Alves',
-    round: 'Semifinais',
-    category: 'A',
-    status: 'scheduled',
-    scheduledAt: '2024-01-22T14:00:00Z'
-  },
-  {
-    id: 15,
-    player1: 'TBD',
-    player2: 'TBD',
-    round: 'Semifinais',
-    category: 'A',
-    status: 'scheduled',
-    scheduledAt: '2024-01-22T16:00:00Z'
-  },
-  // Category A - Final
-  {
-    id: 16,
-    player1: 'TBD',
-    player2: 'TBD',
-    round: 'Final',
-    category: 'A',
-    status: 'scheduled',
-    scheduledAt: '2024-01-23T14:00:00Z'
-  }
-]
+interface Match {
+  id: number
+  player1: string
+  player2: string
+  round: string
+  category: string
+  status: string
+  scheduledAt: string
+  winner?: string
+  score?: string
+  player1Sets: number
+  player2Sets: number
+  hadTiebreak: boolean
+  totalDuration?: number
+}
 
-const mockUsers = [
-  { id: 1, name: 'João Silva', email: 'joao@tcbb.com', role: 'USER', points: 347, predictions: 23 },
-  { id: 2, name: 'Maria Santos', email: 'maria@tcbb.com', role: 'USER', points: 335, predictions: 21 },
-  { id: 3, name: 'Admin TCBB', email: 'admin@tcbb.com', role: 'ADMIN', points: 0, predictions: 0 },
-]
+interface User {
+  id: number
+  name: string
+  email: string
+  role: string
+  points: number
+  predictions: number
+}
 
 function MatchManagement() {
+  const [matches, setMatches] = useState<Match[]>([])
   const [selectedMatch, setSelectedMatch] = useState<number | null>(null)
   const [editingMatch, setEditingMatch] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
   const [matchResult, setMatchResult] = useState({
     winner: '',
     player1Sets: '',
     player2Sets: '',
-    hadTiebreak: false,
-    duration: ''
+    duration: '',
+    hadTiebreak: false
   })
   const [matchEdit, setMatchEdit] = useState({
     player1: '',
     player2: ''
   })
 
-  const handleSubmitResult = (matchId: number) => {
-    // Submit match result logic
-    console.log('Submitting result for match', matchId, matchResult)
-    setSelectedMatch(null)
-    setMatchResult({ winner: '', player1Sets: '', player2Sets: '', hadTiebreak: false, duration: '' })
+  useEffect(() => {
+    fetchMatches()
+  }, [])
+
+  const fetchMatches = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/admin/matches')
+      if (response.ok) {
+        const data = await response.json()
+        setMatches(data.matches)
+      }
+    } catch (error) {
+      console.error('Error fetching matches:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleEditMatch = (matchId: number, player1: string, player2: string) => {
@@ -118,28 +77,87 @@ function MatchManagement() {
     setMatchEdit({ player1, player2 })
   }
 
-  const handleSaveMatchEdit = (matchId: number) => {
-    // Save match edit logic
-    console.log('Saving match edit for match', matchId, matchEdit)
-    setEditingMatch(null)
-    setMatchEdit({ player1: '', player2: '' })
+  const handleSaveMatchEdit = async (matchId: number) => {
+    try {
+      const response = await fetch('/api/admin/matches', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          matchId,
+          player1: matchEdit.player1,
+          player2: matchEdit.player2
+        })
+      })
+
+      if (response.ok) {
+        await fetchMatches()
+        setEditingMatch(null)
+      }
+    } catch (error) {
+      console.error('Error saving match edit:', error)
+    }
+  }
+
+  const handleSaveResult = async (matchId: number) => {
+    try {
+      const response = await fetch('/api/admin/matches', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          matchId,
+          winner: matchResult.winner,
+          player1Sets: matchResult.player1Sets,
+          player2Sets: matchResult.player2Sets,
+          hadTiebreak: matchResult.hadTiebreak,
+          totalDuration: matchResult.duration
+        })
+      })
+
+      if (response.ok) {
+        await fetchMatches()
+        setSelectedMatch(null)
+        setMatchResult({
+          winner: '',
+          player1Sets: '',
+          player2Sets: '',
+          duration: '',
+          hadTiebreak: false
+        })
+      }
+    } catch (error) {
+      console.error('Error saving match result:', error)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="animate-pulse space-y-4">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="h-32 bg-gray-200 rounded"></div>
+        ))}
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Gerenciar Partidas</h2>
-        <p className="text-gray-600 mb-6">Registre os resultados das partidas e edite informações do chaveamento</p>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Gerenciar Partidas</h2>
+        <Badge variant="secondary">{matches.length} partidas</Badge>
       </div>
 
       <div className="grid gap-4">
-        {mockMatches.map((match) => (
-          <Card key={match.id}>
+        {matches.map((match) => (
+          <Card key={match.id} className="border-l-4 border-l-blue-500">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">
+                <CardTitle className="flex items-center space-x-2">
                   {editingMatch === match.id ? (
-                    <div className="flex items-center space-x-2">
+                    <div className="flex space-x-2">
                       <Input
                         value={matchEdit.player1}
                         onChange={(e) => setMatchEdit(prev => ({ ...prev, player1: e.target.value }))}
@@ -251,7 +269,7 @@ function MatchManagement() {
                           </div>
                         </div>
                         <div className="flex space-x-2">
-                          <Button onClick={() => handleSubmitResult(match.id)}>
+                          <Button onClick={() => handleSaveResult(match.id)}>
                             Salvar Resultado
                           </Button>
                           <Button variant="outline" onClick={() => setSelectedMatch(null)}>
@@ -276,31 +294,64 @@ function MatchManagement() {
 }
 
 function UserManagement() {
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/ranking')
+      if (response.ok) {
+        const data = await response.json()
+        const formattedUsers = data.ranking.map((user: any) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: 'USER',
+          points: user.pointsByCategory.general,
+          predictions: user.predictionsByCategory.general.total
+        }))
+        setUsers(formattedUsers)
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="animate-pulse space-y-4">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="h-16 bg-gray-200 rounded"></div>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Gerenciar Usuários</h2>
-        <p className="text-gray-600 mb-6">Visualize e gerencie os participantes</p>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Gerenciar Usuários</h2>
+        <Badge variant="secondary">{users.length} usuários</Badge>
       </div>
 
       <div className="grid gap-4">
-        {mockUsers.map((user) => (
+        {users.map((user) => (
           <Card key={user.id}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="font-semibold">{user.name}</h3>
-                    <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>
-                      {user.role}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-gray-600">{user.email}</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-lg font-bold">{user.points} pontos</div>
-                  <div className="text-sm text-gray-600">{user.predictions} palpites</div>
-                </div>
+            <CardContent className="flex items-center justify-between p-6">
+              <div>
+                <h3 className="font-semibold">{user.name}</h3>
+                <p className="text-sm text-gray-600">{user.email}</p>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold">{user.points} pontos</div>
+                <div className="text-sm text-gray-600">{user.predictions} palpites</div>
               </div>
             </CardContent>
           </Card>
@@ -310,84 +361,99 @@ function UserManagement() {
   )
 }
 
-function TournamentSettings() {
-  const [tournamentName, setTournamentName] = useState("Torneio Interno TCBB 2024")
-  const [startDate, setStartDate] = useState("2024-01-15")
-  const [endDate, setEndDate] = useState("2024-02-15")
+export default function AdminPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [stats, setStats] = useState({
+    totalMatches: 0,
+    completedMatches: 0,
+    totalUsers: 0,
+    totalPredictions: 0
+  })
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Configurações do Torneio</h2>
-        <p className="text-gray-600 mb-6">Gerencie as configurações gerais</p>
+  useEffect(() => {
+    if (status === 'loading') return
+
+    if (!session?.user?.email) {
+      router.push('/login')
+      return
+    }
+
+    checkAdminAccess()
+    fetchStats()
+  }, [session, status, router])
+
+  const checkAdminAccess = async () => {
+    try {
+      const response = await fetch('/api/admin/matches')
+      if (!response.ok) {
+        router.push('/dashboard')
+      }
+    } catch (error) {
+      router.push('/dashboard')
+    }
+  }
+
+  const fetchStats = async () => {
+    try {
+      const [tournamentResponse, rankingResponse] = await Promise.all([
+        fetch('/api/tournament'),
+        fetch('/api/ranking')
+      ])
+
+      if (tournamentResponse.ok && rankingResponse.ok) {
+        const tournamentData = await tournamentResponse.json()
+        const rankingData = await rankingResponse.json()
+
+        setStats({
+          totalMatches: tournamentData.stats.totalMatches,
+          completedMatches: tournamentData.stats.completedMatches,
+          totalUsers: rankingData.stats.totalPlayers,
+          totalPredictions: rankingData.ranking.reduce(
+            (acc: number, user: any) => acc + user.predictionsByCategory.general.total, 0
+          )
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error)
+    }
+  }
+
+  if (status === 'loading') {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Informações Básicas</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="tournament-name">Nome do Torneio</Label>
-            <Input
-              id="tournament-name"
-              value={tournamentName}
-              onChange={(e) => setTournamentName(e.target.value)}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="start-date">Data de Início</Label>
-              <Input
-                id="start-date"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="end-date">Data de Término</Label>
-              <Input
-                id="end-date"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-          </div>
-          <Button>Salvar Configurações</Button>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-function Statistics() {
-  const stats = {
-    totalUsers: 156,
-    totalMatches: 32,
-    completedMatches: 8,
-    totalPredictions: 1247,
-    averagePoints: 187
+    )
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Estatísticas</h2>
-        <p className="text-gray-600 mb-6">Visão geral do torneio</p>
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Painel Administrativo
+          </h1>
+          <p className="text-gray-600">
+            Gerencie partidas, usuários e configurações do torneio
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Lock className="h-5 w-5 text-red-600" />
+          <Badge variant="destructive">Admin</Badge>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card>
-          <CardContent className="flex items-center p-6">
-            <Users className="h-8 w-8 text-blue-600 mr-4" />
-            <div>
-              <div className="text-2xl font-bold">{stats.totalUsers}</div>
-              <p className="text-sm text-gray-600">Usuários Registrados</p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <Card>
           <CardContent className="flex items-center p-6">
             <Trophy className="h-8 w-8 text-emerald-600 mr-4" />
@@ -399,10 +465,19 @@ function Statistics() {
         </Card>
         <Card>
           <CardContent className="flex items-center p-6">
-            <Calendar className="h-8 w-8 text-purple-600 mr-4" />
+            <Calendar className="h-8 w-8 text-blue-600 mr-4" />
             <div>
               <div className="text-2xl font-bold">{stats.completedMatches}</div>
-              <p className="text-sm text-gray-600">Partidas Concluídas</p>
+              <p className="text-sm text-gray-600">Partidas Finalizadas</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center p-6">
+            <Users className="h-8 w-8 text-purple-600 mr-4" />
+            <div>
+              <div className="text-2xl font-bold">{stats.totalUsers}</div>
+              <p className="text-sm text-gray-600">Usuários Ativos</p>
             </div>
           </CardContent>
         </Card>
@@ -415,94 +490,13 @@ function Statistics() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="flex items-center p-6">
-            <Database className="h-8 w-8 text-red-600 mr-4" />
-            <div>
-              <div className="text-2xl font-bold">{stats.averagePoints}</div>
-              <p className="text-sm text-gray-600">Pontos Médios</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  )
-}
-
-export default function AdminPage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-
-  useEffect(() => {
-    if (status === "loading") return // Still loading
-
-    if (!session) {
-      router.push("/login")
-      return
-    }
-
-    if (session.user.role !== "ADMIN") {
-      router.push("/dashboard")
-      return
-    }
-  }, [session, status, router])
-
-  // Show loading while checking authentication
-  if (status === "loading") {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Verificando permissões...</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Show access denied if not admin
-  if (!session || session.user.role !== "ADMIN") {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Card className="w-full max-w-md">
-            <CardContent className="flex flex-col items-center p-8">
-              <Lock className="h-16 w-16 text-red-500 mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Acesso Negado</h2>
-              <p className="text-gray-600 text-center mb-4">
-                Você precisa ser administrador para acessar esta página.
-              </p>
-              <Button onClick={() => router.push("/dashboard")}>
-                Voltar ao Dashboard
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Painel Administrativo
-        </h1>
-        <p className="text-gray-600">
-          Gerencie o torneio, usuários e acompanhe estatísticas
-        </p>
       </div>
 
-      {/* Admin Tabs */}
+      {/* Main Content */}
       <Tabs defaultValue="matches" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="matches">Partidas</TabsTrigger>
-          <TabsTrigger value="users">Usuários</TabsTrigger>
-          <TabsTrigger value="settings">Configurações</TabsTrigger>
-          <TabsTrigger value="stats">Estatísticas</TabsTrigger>
-          <TabsTrigger value="export">Exportar</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="matches">Gerenciar Partidas</TabsTrigger>
+          <TabsTrigger value="users">Gerenciar Usuários</TabsTrigger>
         </TabsList>
 
         <TabsContent value="matches">
@@ -511,38 +505,6 @@ export default function AdminPage() {
 
         <TabsContent value="users">
           <UserManagement />
-        </TabsContent>
-
-        <TabsContent value="settings">
-          <TournamentSettings />
-        </TabsContent>
-
-        <TabsContent value="stats">
-          <Statistics />
-        </TabsContent>
-
-        <TabsContent value="export">
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Exportar Dados</h2>
-              <p className="text-gray-600 mb-6">Faça backup dos dados do torneio</p>
-            </div>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Opções de Exportação</CardTitle>
-                <CardDescription>
-                  Escolha os dados que deseja exportar
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button className="w-full">Exportar Ranking (CSV)</Button>
-                <Button className="w-full" variant="outline">Exportar Palpites (CSV)</Button>
-                <Button className="w-full" variant="outline">Exportar Partidas (CSV)</Button>
-                <Button className="w-full" variant="outline">Backup Completo (JSON)</Button>
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
       </Tabs>
     </div>

@@ -1,84 +1,36 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Trophy, Target, Clock, TrendingUp, Star, Flame } from "lucide-react"
 
-// Mock data for demonstration with categories
-const mockCategories = [
-  { id: 'A', name: 'Categoria A', description: 'Jogadores de alto nível' },
-  { id: 'B', name: 'Categoria B', description: 'Jogadores intermediários' },
-  { id: 'C', name: 'Categoria C', description: 'Jogadores iniciantes' },
-]
-
-const mockMatchesByCategory = {
-  A: [
-    {
-      id: 1,
-      player1: { name: 'Carlos Silva', ranking: 1 },
-      player2: { name: 'João Santos', ranking: 12 },
-      scheduledAt: '2024-01-15T14:00:00Z',
-      status: 'scheduled',
-      round: '1ª Rodada',
-      canPredict: true,
-      category: 'A',
-    },
-    {
-      id: 2,
-      player1: { name: 'Pedro Oliveira', ranking: 3 },
-      player2: { name: 'Lucas Costa', ranking: 8 },
-      scheduledAt: '2024-01-15T16:00:00Z',
-      status: 'scheduled',
-      round: '1ª Rodada',
-      canPredict: true,
-      category: 'A',
-    },
-  ],
-  B: [
-    {
-      id: 3,
-      player1: { name: 'Thiago Carvalho', ranking: 13 },
-      player2: { name: 'Ricardo Gomes', ranking: 18 },
-      scheduledAt: '2024-01-16T14:00:00Z',
-      status: 'scheduled',
-      round: '1ª Rodada',
-      canPredict: true,
-      category: 'B',
-    },
-    {
-      id: 4,
-      player1: { name: 'Mateus Barbosa', ranking: 15 },
-      player2: { name: 'Leonardo Dias', ranking: 20 },
-      scheduledAt: '2024-01-16T16:00:00Z',
-      status: 'scheduled',
-      round: '1ª Rodada',
-      canPredict: true,
-      category: 'B',
-    },
-  ],
-  C: [
-    {
-      id: 5,
-      player1: { name: 'Julio Cardoso', ranking: 25 },
-      player2: { name: 'Kleber Pinto', ranking: 30 },
-      scheduledAt: '2024-01-17T14:00:00Z',
-      status: 'scheduled',
-      round: '1ª Rodada',
-      canPredict: true,
-      category: 'C',
-    },
-  ]
+interface Match {
+  id: number
+  player1: { name: string; ranking: number }
+  player2: { name: string; ranking: number }
+  scheduledAt: string
+  status: string
+  round: string
+  canPredict: boolean
+  category: string
 }
 
-const mockTournamentBets = [
-  { type: 'CHAMPION', label: 'Campeão', points: 25, description: 'Quem será o campeão do torneio?' },
-  { type: 'RUNNER_UP', label: 'Vice-campeão', points: 15, description: 'Quem chegará à final mas não ganhará?' },
-  { type: 'SEMIFINALIST', label: 'Semifinalista', points: 10, description: 'Escolha um jogador que chegará às semifinais' },
-  { type: 'QUARTERFINALIST', label: 'Quartas de Final', points: 5, description: 'Escolha um jogador que chegará às quartas' },
-]
+interface Category {
+  id: string
+  name: string
+  description: string
+}
+
+interface TournamentBet {
+  type: string
+  label: string
+  points: number
+  description: string
+}
 
 interface Prediction {
   winner?: string
@@ -89,79 +41,61 @@ interface Prediction {
   marginOfVictory?: 'CLOSE' | 'COMFORTABLE'
 }
 
-function MatchPredictionCard({ match }: { match: typeof mockMatchesByCategory.A[0] }) {
+function MatchPredictionCard({ match }: { match: Match }) {
+  const { data: session } = useSession()
   const [prediction, setPrediction] = useState<Prediction>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async () => {
+    if (!session?.user || !prediction.winner) return
+
     setIsSubmitting(true)
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setIsSubmitting(false)
-    // Show success message
-  }
+    try {
+      const response = await fetch('/api/predictions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          matchId: match.id,
+          userId: session.user.id,
+          prediction
+        })
+      })
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+      if (response.ok) {
+        console.log('Prediction saved successfully')
+      }
+    } catch (error) {
+      console.error('Error saving prediction:', error)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
-
-  const isUnderdog = match.player1.ranking > match.player2.ranking ? 'player1' : 'player2'
 
   return (
-    <Card className="mb-6">
+    <Card className="border-l-4 border-l-emerald-500">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg">
-                {match.player1.name} vs {match.player2.name}
-              </CardTitle>
-              <CardDescription>
-                {match.round} • Categoria {match.category} • {formatDate(match.scheduledAt)}
-              </CardDescription>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="text-xs">
-                Cat. {match.category}
-              </Badge>
-              <Badge variant="secondary">{match.status === 'scheduled' ? 'Agendada' : 'Em Andamento'}</Badge>
-            </div>
+          <div>
+            <CardTitle className="text-lg">
+              {match.player1.name} vs {match.player2.name}
+            </CardTitle>
+            <CardDescription className="flex items-center space-x-2">
+              <span>Categoria {match.category}</span>
+              <span>•</span>
+              <span>{match.round}</span>
+              <span>•</span>
+              <span>{new Date(match.scheduledAt).toLocaleDateString()}</span>
+            </CardDescription>
           </div>
+          <Badge variant="outline">
+            Ranking: #{match.player1.ranking} vs #{match.player2.ranking}
+          </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Players */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center p-4 border rounded-lg">
-            <div className="font-semibold">{match.player1.name}</div>
-            <div className="text-sm text-gray-600">#{match.player1.ranking}</div>
-            {isUnderdog === 'player1' && (
-              <Badge variant="outline" className="mt-2 text-xs">
-                <Flame className="h-3 w-3 mr-1" />
-                Azarão
-              </Badge>
-            )}
-          </div>
-          <div className="text-center p-4 border rounded-lg">
-            <div className="font-semibold">{match.player2.name}</div>
-            <div className="text-sm text-gray-600">#{match.player2.ranking}</div>
-            {isUnderdog === 'player2' && (
-              <Badge variant="outline" className="mt-2 text-xs">
-                <Flame className="h-3 w-3 mr-1" />
-                Azarão
-              </Badge>
-            )}
-          </div>
-        </div>
-
-        {/* Prediction Options */}
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Winner */}
           <div>
             <label className="text-sm font-medium mb-2 block">
@@ -171,16 +105,22 @@ function MatchPredictionCard({ match }: { match: typeof mockMatchesByCategory.A[
               <Button
                 variant={prediction.winner === 'player1' ? 'default' : 'outline'}
                 onClick={() => setPrediction(prev => ({ ...prev, winner: 'player1' }))}
-                className="justify-start"
+                className="h-auto p-3"
               >
-                {match.player1.name}
+                <div className="text-center">
+                  <div className="font-medium">{match.player1.name}</div>
+                  <div className="text-xs opacity-70">#{match.player1.ranking}</div>
+                </div>
               </Button>
               <Button
                 variant={prediction.winner === 'player2' ? 'default' : 'outline'}
                 onClick={() => setPrediction(prev => ({ ...prev, winner: 'player2' }))}
-                className="justify-start"
+                className="h-auto p-3"
               >
-                {match.player2.name}
+                <div className="text-center">
+                  <div className="font-medium">{match.player2.name}</div>
+                  <div className="text-xs opacity-70">#{match.player2.ranking}</div>
+                </div>
               </Button>
             </div>
           </div>
@@ -188,7 +128,7 @@ function MatchPredictionCard({ match }: { match: typeof mockMatchesByCategory.A[
           {/* Exact Score */}
           <div>
             <label className="text-sm font-medium mb-2 block">
-              Placar exato em sets (15 pontos)
+              Placar exato (15 pontos)
             </label>
             <div className="grid grid-cols-2 gap-2">
               <Button
@@ -206,10 +146,10 @@ function MatchPredictionCard({ match }: { match: typeof mockMatchesByCategory.A[
             </div>
           </div>
 
-          {/* Third Set */}
+          {/* Goes to Third Set */}
           <div>
             <label className="text-sm font-medium mb-2 block">
-              Vai para 3º set? (8 pontos)
+              Vai ao 3º set? (8 pontos)
             </label>
             <div className="grid grid-cols-2 gap-2">
               <Button
@@ -236,14 +176,12 @@ function MatchPredictionCard({ match }: { match: typeof mockMatchesByCategory.A[
               <Button
                 variant={prediction.firstSetWinner === 'player1' ? 'default' : 'outline'}
                 onClick={() => setPrediction(prev => ({ ...prev, firstSetWinner: 'player1' }))}
-                className="justify-start"
               >
                 {match.player1.name}
               </Button>
               <Button
                 variant={prediction.firstSetWinner === 'player2' ? 'default' : 'outline'}
                 onClick={() => setPrediction(prev => ({ ...prev, firstSetWinner: 'player2' }))}
-                className="justify-start"
               >
                 {match.player2.name}
               </Button>
@@ -306,19 +244,25 @@ function MatchPredictionCard({ match }: { match: typeof mockMatchesByCategory.A[
   )
 }
 
-function TournamentBetsTab() {
+function TournamentBetsTab({ 
+  categories, 
+  tournamentBets 
+}: { 
+  categories: Category[], 
+  tournamentBets: TournamentBet[] 
+}) {
   const [selectedBets, setSelectedBets] = useState<Record<string, string>>({})
   const [selectedCategory, setSelectedCategory] = useState<string>('A')
+  const [players, setPlayers] = useState<string[]>([])
 
-  const getPlayersForCategory = (category: string) => {
-    const matches = mockMatchesByCategory[category as keyof typeof mockMatchesByCategory] || []
-    const players = new Set<string>()
-    matches.forEach(match => {
-      players.add(match.player1.name)
-      players.add(match.player2.name)
-    })
-    return Array.from(players)
-  }
+  useEffect(() => {
+    // This would fetch players for the selected category
+    // For now, using placeholder data
+    setPlayers([
+      'Carlos Silva', 'João Santos', 'Pedro Oliveira', 'Lucas Costa',
+      'André Ferreira', 'Rafael Lima', 'Bruno Martins', 'Gabriel Rocha'
+    ])
+  }, [selectedCategory])
 
   return (
     <div className="space-y-6">
@@ -339,7 +283,7 @@ function TournamentBetsTab() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {mockCategories.map((category) => (
+            {categories.map((category) => (
               <Button
                 key={category.id}
                 variant={selectedCategory === category.id ? 'default' : 'outline'}
@@ -362,9 +306,8 @@ function TournamentBetsTab() {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {mockTournamentBets.map((bet) => {
+        {tournamentBets.map((bet) => {
           const betKey = `${bet.type}_${selectedCategory}`
-          const playersForCategory = getPlayersForCategory(selectedCategory)
           
           return (
             <Card key={betKey}>
@@ -382,7 +325,7 @@ function TournamentBetsTab() {
                   onChange={(e) => setSelectedBets(prev => ({ ...prev, [betKey]: e.target.value }))}
                 >
                   <option value="">Selecione um jogador...</option>
-                  {playersForCategory.map((player) => (
+                  {players.map((player) => (
                     <option key={player} value={player}>{player}</option>
                   ))}
                 </select>
@@ -402,17 +345,85 @@ function TournamentBetsTab() {
 }
 
 export default function PredictionsPage() {
+  const { data: session } = useSession()
   const [selectedMatchCategory, setSelectedMatchCategory] = useState<'A' | 'B' | 'C' | 'ALL'>('ALL')
+  const [matchesByCategory, setMatchesByCategory] = useState<Record<string, Match[]>>({})
+  const [categories, setCategories] = useState<Category[]>([])
+  const [tournamentBets, setTournamentBets] = useState<TournamentBet[]>([])
+  const [loading, setLoading] = useState(true)
+  const [userStats, setUserStats] = useState({
+    totalPredictions: 0,
+    correctPredictions: 0,
+    pointsEarned: 0,
+    successRate: 0
+  })
+
+  useEffect(() => {
+    fetchPredictionsData()
+    if (session?.user?.email) {
+      fetchUserStats()
+    }
+  }, [session, selectedMatchCategory])
+
+  const fetchPredictionsData = async () => {
+    try {
+      setLoading(true)
+      const categoryParam = selectedMatchCategory === 'ALL' ? '' : `?category=${selectedMatchCategory}`
+      const response = await fetch(`/api/predictions${categoryParam}`)
+      if (response.ok) {
+        const data = await response.json()
+        setMatchesByCategory(data.matchesByCategory)
+        setCategories(data.categories)
+        setTournamentBets(data.tournamentBets)
+      }
+    } catch (error) {
+      console.error('Error fetching predictions data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchUserStats = async () => {
+    try {
+      const response = await fetch('/api/users/stats')
+      if (response.ok) {
+        const data = await response.json()
+        setUserStats({
+          totalPredictions: data.totalPredictions,
+          correctPredictions: data.correctPredictions,
+          pointsEarned: data.totalPoints,
+          successRate: data.successRate
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching user stats:', error)
+    }
+  }
 
   const getMatchesForCategory = () => {
     if (selectedMatchCategory === 'ALL') {
-      return Object.values(mockMatchesByCategory).flat()
+      return Object.values(matchesByCategory).flat()
     } else {
-      return mockMatchesByCategory[selectedMatchCategory] || []
+      return matchesByCategory[selectedMatchCategory] || []
     }
   }
 
   const matchesToShow = getMatchesForCategory()
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -432,7 +443,7 @@ export default function PredictionsPage() {
           <CardContent className="flex items-center p-6">
             <Target className="h-8 w-8 text-emerald-600 mr-4" />
             <div>
-              <div className="text-2xl font-bold">12</div>
+              <div className="text-2xl font-bold">{userStats.totalPredictions}</div>
               <p className="text-sm text-gray-600">Palpites Feitos</p>
             </div>
           </CardContent>
@@ -441,7 +452,7 @@ export default function PredictionsPage() {
           <CardContent className="flex items-center p-6">
             <Trophy className="h-8 w-8 text-blue-600 mr-4" />
             <div>
-              <div className="text-2xl font-bold">7</div>
+              <div className="text-2xl font-bold">{userStats.correctPredictions}</div>
               <p className="text-sm text-gray-600">Acertos</p>
             </div>
           </CardContent>
@@ -450,7 +461,7 @@ export default function PredictionsPage() {
           <CardContent className="flex items-center p-6">
             <Star className="h-8 w-8 text-orange-600 mr-4" />
             <div>
-              <div className="text-2xl font-bold">89</div>
+              <div className="text-2xl font-bold">{userStats.pointsEarned}</div>
               <p className="text-sm text-gray-600">Pontos Ganhos</p>
             </div>
           </CardContent>
@@ -459,7 +470,7 @@ export default function PredictionsPage() {
           <CardContent className="flex items-center p-6">
             <TrendingUp className="h-8 w-8 text-purple-600 mr-4" />
             <div>
-              <div className="text-2xl font-bold">58%</div>
+              <div className="text-2xl font-bold">{userStats.successRate}%</div>
               <p className="text-sm text-gray-600">Taxa de Acerto</p>
             </div>
           </CardContent>
@@ -521,7 +532,7 @@ export default function PredictionsPage() {
         </TabsContent>
 
         <TabsContent value="tournament">
-          <TournamentBetsTab />
+          <TournamentBetsTab categories={categories} tournamentBets={tournamentBets} />
         </TabsContent>
       </Tabs>
     </div>
