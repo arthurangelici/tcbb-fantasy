@@ -1,0 +1,540 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Trophy, Target, Clock, TrendingUp, Star, Flame } from "lucide-react"
+
+interface Match {
+  id: number
+  player1: { name: string; ranking: number }
+  player2: { name: string; ranking: number }
+  scheduledAt: string
+  status: string
+  round: string
+  canPredict: boolean
+  category: string
+}
+
+interface Category {
+  id: string
+  name: string
+  description: string
+}
+
+interface TournamentBet {
+  type: string
+  label: string
+  points: number
+  description: string
+}
+
+interface Prediction {
+  winner?: string
+  exactScore?: string
+  goesToThirdSet?: boolean
+  firstSetWinner?: string
+  willHaveTiebreak?: boolean
+  marginOfVictory?: 'CLOSE' | 'COMFORTABLE'
+}
+
+function MatchPredictionCard({ match }: { match: Match }) {
+  const { data: session } = useSession()
+  const [prediction, setPrediction] = useState<Prediction>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleSubmit = async () => {
+    if (!session?.user || !prediction.winner) return
+
+    setIsSubmitting(true)
+    try {
+      const response = await fetch('/api/predictions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          matchId: match.id,
+          userId: session.user.id,
+          prediction
+        })
+      })
+
+      if (response.ok) {
+        console.log('Prediction saved successfully')
+      }
+    } catch (error) {
+      console.error('Error saving prediction:', error)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <Card className="border-l-4 border-l-emerald-500">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg">
+              {match.player1.name} vs {match.player2.name}
+            </CardTitle>
+            <CardDescription className="flex items-center space-x-2">
+              <span>Categoria {match.category}</span>
+              <span>•</span>
+              <span>{match.round}</span>
+              <span>•</span>
+              <span>{new Date(match.scheduledAt).toLocaleDateString()}</span>
+            </CardDescription>
+          </div>
+          <Badge variant="outline">
+            Ranking: #{match.player1.ranking} vs #{match.player2.ranking}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Winner */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Vencedor da partida (5 pontos)
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant={prediction.winner === 'player1' ? 'default' : 'outline'}
+                onClick={() => setPrediction(prev => ({ ...prev, winner: 'player1' }))}
+                className="h-auto p-3"
+              >
+                <div className="text-center">
+                  <div className="font-medium">{match.player1.name}</div>
+                  <div className="text-xs opacity-70">#{match.player1.ranking}</div>
+                </div>
+              </Button>
+              <Button
+                variant={prediction.winner === 'player2' ? 'default' : 'outline'}
+                onClick={() => setPrediction(prev => ({ ...prev, winner: 'player2' }))}
+                className="h-auto p-3"
+              >
+                <div className="text-center">
+                  <div className="font-medium">{match.player2.name}</div>
+                  <div className="text-xs opacity-70">#{match.player2.ranking}</div>
+                </div>
+              </Button>
+            </div>
+          </div>
+
+          {/* Exact Score */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Placar exato (15 pontos)
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant={prediction.exactScore === '2-0' ? 'default' : 'outline'}
+                onClick={() => setPrediction(prev => ({ ...prev, exactScore: '2-0' }))}
+              >
+                2-0
+              </Button>
+              <Button
+                variant={prediction.exactScore === '2-1' ? 'default' : 'outline'}
+                onClick={() => setPrediction(prev => ({ ...prev, exactScore: '2-1' }))}
+              >
+                2-1
+              </Button>
+            </div>
+          </div>
+
+          {/* Goes to Third Set */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Vai ao 3º set? (8 pontos)
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant={prediction.goesToThirdSet === true ? 'default' : 'outline'}
+                onClick={() => setPrediction(prev => ({ ...prev, goesToThirdSet: true }))}
+              >
+                Sim
+              </Button>
+              <Button
+                variant={prediction.goesToThirdSet === false ? 'default' : 'outline'}
+                onClick={() => setPrediction(prev => ({ ...prev, goesToThirdSet: false }))}
+              >
+                Não
+              </Button>
+            </div>
+          </div>
+
+          {/* First Set Winner */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Vencedor do 1º set (3 pontos)
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant={prediction.firstSetWinner === 'player1' ? 'default' : 'outline'}
+                onClick={() => setPrediction(prev => ({ ...prev, firstSetWinner: 'player1' }))}
+              >
+                {match.player1.name}
+              </Button>
+              <Button
+                variant={prediction.firstSetWinner === 'player2' ? 'default' : 'outline'}
+                onClick={() => setPrediction(prev => ({ ...prev, firstSetWinner: 'player2' }))}
+              >
+                {match.player2.name}
+              </Button>
+            </div>
+          </div>
+
+          {/* Tiebreak */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Terá tie-break? (5 pontos)
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant={prediction.willHaveTiebreak === true ? 'default' : 'outline'}
+                onClick={() => setPrediction(prev => ({ ...prev, willHaveTiebreak: true }))}
+              >
+                Sim
+              </Button>
+              <Button
+                variant={prediction.willHaveTiebreak === false ? 'default' : 'outline'}
+                onClick={() => setPrediction(prev => ({ ...prev, willHaveTiebreak: false }))}
+              >
+                Não
+              </Button>
+            </div>
+          </div>
+
+          {/* Margin of Victory */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Margem de vitória (7 pontos)
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant={prediction.marginOfVictory === 'CLOSE' ? 'default' : 'outline'}
+                onClick={() => setPrediction(prev => ({ ...prev, marginOfVictory: 'CLOSE' }))}
+              >
+                Apertado
+              </Button>
+              <Button
+                variant={prediction.marginOfVictory === 'COMFORTABLE' ? 'default' : 'outline'}
+                onClick={() => setPrediction(prev => ({ ...prev, marginOfVictory: 'COMFORTABLE' }))}
+              >
+                Tranquilo
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Submit */}
+        <Button 
+          onClick={handleSubmit}
+          disabled={isSubmitting || !prediction.winner}
+          className="w-full"
+        >
+          {isSubmitting ? 'Salvando...' : 'Salvar Palpites'}
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+function TournamentBetsTab({ 
+  categories, 
+  tournamentBets 
+}: { 
+  categories: Category[], 
+  tournamentBets: TournamentBet[] 
+}) {
+  const [selectedBets, setSelectedBets] = useState<Record<string, string>>({})
+  const [selectedCategory, setSelectedCategory] = useState<string>('A')
+  const [players, setPlayers] = useState<string[]>([])
+
+  useEffect(() => {
+    // This would fetch players for the selected category
+    // For now, using placeholder data
+    setPlayers([
+      'Carlos Silva', 'João Santos', 'Pedro Oliveira', 'Lucas Costa',
+      'André Ferreira', 'Rafael Lima', 'Bruno Martins', 'Gabriel Rocha'
+    ])
+  }, [selectedCategory])
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold mb-2">Palpites de Torneio</h2>
+        <p className="text-gray-600">
+          Faça seus palpites sobre o torneio para cada categoria!
+        </p>
+      </div>
+
+      {/* Category Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Selecione a Categoria para Palpites</CardTitle>
+          <CardDescription>
+            Você pode fazer palpites para todas as categorias. Cada categoria tem pontuações próprias, mas a pontuação final é geral.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {categories.map((category) => (
+              <Button
+                key={category.id}
+                variant={selectedCategory === category.id ? 'default' : 'outline'}
+                onClick={() => setSelectedCategory(category.id)}
+                className="h-auto flex-col p-4"
+              >
+                <div className="text-lg font-semibold">{category.name}</div>
+                <div className="text-sm opacity-70 mt-1">{category.description}</div>
+              </Button>
+            ))}
+          </div>
+          {selectedCategory && (
+            <div className="mt-4 p-3 bg-emerald-50 rounded-lg">
+              <p className="text-sm text-emerald-700">
+                ✓ Fazendo palpites para Categoria {selectedCategory}. Suas pontuações contribuirão para o ranking geral.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {tournamentBets.map((bet) => {
+          const betKey = `${bet.type}_${selectedCategory}`
+          
+          return (
+            <Card key={betKey}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">{bet.label} - Cat. {selectedCategory}</CardTitle>
+                  <Badge variant="secondary">{bet.points} pontos</Badge>
+                </div>
+                <CardDescription>{bet.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <select 
+                  className="w-full p-2 border rounded-md"
+                  value={selectedBets[betKey] || ''}
+                  onChange={(e) => setSelectedBets(prev => ({ ...prev, [betKey]: e.target.value }))}
+                >
+                  <option value="">Selecione um jogador...</option>
+                  {players.map((player) => (
+                    <option key={player} value={player}>{player}</option>
+                  ))}
+                </select>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+
+      <div className="text-center">
+        <Button size="lg">
+          Salvar Palpites de Categoria {selectedCategory}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+export default function PredictionsPage() {
+  const { data: session } = useSession()
+  const [selectedMatchCategory, setSelectedMatchCategory] = useState<'A' | 'B' | 'C' | 'ALL'>('ALL')
+  const [matchesByCategory, setMatchesByCategory] = useState<Record<string, Match[]>>({})
+  const [categories, setCategories] = useState<Category[]>([])
+  const [tournamentBets, setTournamentBets] = useState<TournamentBet[]>([])
+  const [loading, setLoading] = useState(true)
+  const [userStats, setUserStats] = useState({
+    totalPredictions: 0,
+    correctPredictions: 0,
+    pointsEarned: 0,
+    successRate: 0
+  })
+
+  useEffect(() => {
+    fetchPredictionsData()
+    if (session?.user?.email) {
+      fetchUserStats()
+    }
+  }, [session, selectedMatchCategory])
+
+  const fetchPredictionsData = async () => {
+    try {
+      setLoading(true)
+      const categoryParam = selectedMatchCategory === 'ALL' ? '' : `?category=${selectedMatchCategory}`
+      const response = await fetch(`/api/predictions${categoryParam}`)
+      if (response.ok) {
+        const data = await response.json()
+        setMatchesByCategory(data.matchesByCategory)
+        setCategories(data.categories)
+        setTournamentBets(data.tournamentBets)
+      }
+    } catch (error) {
+      console.error('Error fetching predictions data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchUserStats = async () => {
+    try {
+      const response = await fetch('/api/users/stats')
+      if (response.ok) {
+        const data = await response.json()
+        setUserStats({
+          totalPredictions: data.totalPredictions,
+          correctPredictions: data.correctPredictions,
+          pointsEarned: data.totalPoints,
+          successRate: data.successRate
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching user stats:', error)
+    }
+  }
+
+  const getMatchesForCategory = () => {
+    if (selectedMatchCategory === 'ALL') {
+      return Object.values(matchesByCategory).flat()
+    } else {
+      return matchesByCategory[selectedMatchCategory] || []
+    }
+  }
+
+  const matchesToShow = getMatchesForCategory()
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Fazer Palpites
+        </h1>
+        <p className="text-gray-600">
+          Faça seus palpites nas partidas de todas as categorias e ganhe pontos pelos acertos
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <Card>
+          <CardContent className="flex items-center p-6">
+            <Target className="h-8 w-8 text-emerald-600 mr-4" />
+            <div>
+              <div className="text-2xl font-bold">{userStats.totalPredictions}</div>
+              <p className="text-sm text-gray-600">Palpites Feitos</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center p-6">
+            <Trophy className="h-8 w-8 text-blue-600 mr-4" />
+            <div>
+              <div className="text-2xl font-bold">{userStats.correctPredictions}</div>
+              <p className="text-sm text-gray-600">Acertos</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center p-6">
+            <Star className="h-8 w-8 text-orange-600 mr-4" />
+            <div>
+              <div className="text-2xl font-bold">{userStats.pointsEarned}</div>
+              <p className="text-sm text-gray-600">Pontos Ganhos</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center p-6">
+            <TrendingUp className="h-8 w-8 text-purple-600 mr-4" />
+            <div>
+              <div className="text-2xl font-bold">{userStats.successRate}%</div>
+              <p className="text-sm text-gray-600">Taxa de Acerto</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabs */}
+      <Tabs defaultValue="matches" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="matches">Palpites por Partida</TabsTrigger>
+          <TabsTrigger value="tournament">Palpites de Torneio</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="matches" className="space-y-6">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold mb-2">Próximas Partidas</h2>
+            <p className="text-gray-600">
+              Faça palpites específicos sobre cada partida de todas as categorias
+            </p>
+          </div>
+
+          {/* Category Filter for Matches */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-4">Filtrar Partidas por Categoria</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={selectedMatchCategory === 'ALL' ? "default" : "outline"}
+                onClick={() => setSelectedMatchCategory('ALL')}
+              >
+                Todas as Categorias
+              </Button>
+              {['A', 'B', 'C'].map((category) => (
+                <Button
+                  key={category}
+                  variant={selectedMatchCategory === category ? "default" : "outline"}
+                  onClick={() => setSelectedMatchCategory(category as 'A' | 'B' | 'C')}
+                >
+                  Categoria {category}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {matchesToShow.map((match) => (
+            <MatchPredictionCard key={match.id} match={match} />
+          ))}
+
+          {matchesToShow.length === 0 && (
+            <div className="text-center py-12">
+              <Clock className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Nenhuma partida disponível
+              </h3>
+              <p className="text-gray-600">
+                Aguarde novas partidas serem agendadas para esta categoria
+              </p>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="tournament">
+          <TournamentBetsTab categories={categories} tournamentBets={tournamentBets} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
