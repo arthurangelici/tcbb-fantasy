@@ -490,22 +490,6 @@ export default function AdminPage() {
     totalPredictions: 0
   })
 
-  useEffect(() => {
-    if (status === 'loading') return
-
-    if (!session?.user?.email) {
-      router.push('/login')
-      return
-    }
-
-    const initializeAdmin = async () => {
-      await checkAdminAccess()
-      await fetchStats()
-    }
-
-    initializeAdmin()
-  }, [session, status, router, checkAdminAccess, fetchStats])
-
   const checkAdminAccess = async () => {
     try {
       const response = await fetch('/api/admin/matches')
@@ -541,6 +525,22 @@ export default function AdminPage() {
       console.error('Error fetching stats:', error)
     }
   }
+
+  useEffect(() => {
+    if (status === 'loading') return
+
+    if (!session?.user?.email) {
+      router.push('/login')
+      return
+    }
+
+    const initializeAdmin = async () => {
+      await checkAdminAccess()
+      await fetchStats()
+    }
+
+    initializeAdmin()
+  }, [session, status, router])
 
   if (status === 'loading') {
     return (
