@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Users, Trophy, Calendar, BarChart3, Database, Lock } from "lucide-react"
+import { Users, Trophy, Calendar, BarChart3, Lock } from "lucide-react"
 
 interface Match {
   id: number
@@ -40,6 +40,7 @@ function MatchManagement() {
   const [matches, setMatches] = useState<Match[]>([])
   const [selectedMatch, setSelectedMatch] = useState<number | null>(null)
   const [editingMatch, setEditingMatch] = useState<number | null>(null)
+  const [showCreateForm, setShowCreateForm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [matchResult, setMatchResult] = useState({
     winner: '',
@@ -51,6 +52,13 @@ function MatchManagement() {
   const [matchEdit, setMatchEdit] = useState({
     player1: '',
     player2: ''
+  })
+  const [newMatch, setNewMatch] = useState({
+    player1Name: '',
+    player2Name: '',
+    category: 'A',
+    round: 'QUARTERFINALS',
+    scheduledAt: ''
   })
 
   useEffect(() => {
@@ -97,6 +105,35 @@ function MatchManagement() {
       }
     } catch (error) {
       console.error('Error saving match edit:', error)
+    }
+  }
+
+  const handleCreateMatch = async () => {
+    try {
+      const response = await fetch('/api/admin/matches', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newMatch)
+      })
+
+      if (response.ok) {
+        await fetchMatches()
+        setShowCreateForm(false)
+        setNewMatch({
+          player1Name: '',
+          player2Name: '',
+          category: 'A',
+          round: 'QUARTERFINALS',
+          scheduledAt: ''
+        })
+      } else {
+        const errorData = await response.json()
+        console.error('Error creating match:', errorData.error)
+      }
+    } catch (error) {
+      console.error('Error creating match:', error)
     }
   }
 
@@ -147,8 +184,90 @@ function MatchManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Gerenciar Partidas</h2>
-        <Badge variant="secondary">{matches.length} partidas</Badge>
+        <div className="flex items-center space-x-2">
+          <Badge variant="secondary">{matches.length} partidas</Badge>
+          <Button onClick={() => setShowCreateForm(!showCreateForm)}>
+            {showCreateForm ? 'Cancelar' : 'Criar Nova Partida'}
+          </Button>
+        </div>
       </div>
+
+      {/* Create Match Form */}
+      {showCreateForm && (
+        <Card className="border-l-4 border-l-green-500">
+          <CardHeader>
+            <CardTitle>Criar Nova Partida</CardTitle>
+            <CardDescription>
+              Adicione uma nova partida ao torneio
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="player1Name">Jogador 1</Label>
+                <Input
+                  id="player1Name"
+                  placeholder="Nome do Jogador 1"
+                  value={newMatch.player1Name}
+                  onChange={(e) => setNewMatch(prev => ({ ...prev, player1Name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="player2Name">Jogador 2</Label>
+                <Input
+                  id="player2Name"
+                  placeholder="Nome do Jogador 2"
+                  value={newMatch.player2Name}
+                  onChange={(e) => setNewMatch(prev => ({ ...prev, player2Name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="category">Categoria</Label>
+                <select
+                  id="category"
+                  className="w-full p-2 border rounded-md"
+                  value={newMatch.category}
+                  onChange={(e) => setNewMatch(prev => ({ ...prev, category: e.target.value }))}
+                >
+                  <option value="A">Categoria A</option>
+                  <option value="B">Categoria B</option>
+                  <option value="C">Categoria C</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="round">Rodada</Label>
+                <select
+                  id="round"
+                  className="w-full p-2 border rounded-md"
+                  value={newMatch.round}
+                  onChange={(e) => setNewMatch(prev => ({ ...prev, round: e.target.value }))}
+                >
+                  <option value="QUARTERFINALS">Quartas de Final</option>
+                  <option value="SEMIFINALS">Semifinais</option>
+                  <option value="FINAL">Final</option>
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="scheduledAt">Data/Hora (Opcional)</Label>
+                <Input
+                  id="scheduledAt"
+                  type="datetime-local"
+                  value={newMatch.scheduledAt}
+                  onChange={(e) => setNewMatch(prev => ({ ...prev, scheduledAt: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="flex space-x-2 mt-4">
+              <Button onClick={handleCreateMatch}>
+                Criar Partida
+              </Button>
+              <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+                Cancelar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4">
         {matches.map((match) => (
@@ -307,7 +426,7 @@ function UserManagement() {
       const response = await fetch('/api/ranking')
       if (response.ok) {
         const data = await response.json()
-        const formattedUsers = data.ranking.map((user: any) => ({
+        const formattedUsers = data.ranking.map((user: { id: number; name: string; email: string; pointsByCategory: { general: number }; predictionsByCategory: { general: { total: number } } }) => ({
           id: user.id,
           name: user.name,
           email: user.email,
@@ -379,9 +498,13 @@ export default function AdminPage() {
       return
     }
 
-    checkAdminAccess()
-    fetchStats()
-  }, [session, status, router])
+    const initializeAdmin = async () => {
+      await checkAdminAccess()
+      await fetchStats()
+    }
+
+    initializeAdmin()
+  }, [session, status, router, checkAdminAccess, fetchStats])
 
   const checkAdminAccess = async () => {
     try {
@@ -389,7 +512,7 @@ export default function AdminPage() {
       if (!response.ok) {
         router.push('/dashboard')
       }
-    } catch (error) {
+    } catch {
       router.push('/dashboard')
     }
   }
@@ -410,7 +533,7 @@ export default function AdminPage() {
           completedMatches: tournamentData.stats.completedMatches,
           totalUsers: rankingData.stats.totalPlayers,
           totalPredictions: rankingData.ranking.reduce(
-            (acc: number, user: any) => acc + user.predictionsByCategory.general.total, 0
+            (acc: number, user: { predictionsByCategory: { general: { total: number } } }) => acc + user.predictionsByCategory.general.total, 0
           )
         })
       }
