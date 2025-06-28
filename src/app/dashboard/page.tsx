@@ -2,15 +2,57 @@
 
 import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Trophy, Target, TrendingUp, Calendar, Award } from "lucide-react"
 import Link from "next/link"
 
+interface UserStats {
+  totalPoints: number
+  position: number
+  correctPredictions: number
+  totalPredictions: number
+  successRate: number
+  streak: number
+  upcomingMatches: number
+  recentMatches: Array<{
+    id: string
+    player1: string
+    player2: string
+    result: string
+    userPrediction: string
+    points: number
+    correct: boolean
+  }>
+}
+
 export default function DashboardPage() {
   const { data: session, status } = useSession()
+  const [stats, setStats] = useState<UserStats | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  if (status === "loading") {
+  useEffect(() => {
+    if (session?.user?.email) {
+      fetchUserStats()
+    }
+  }, [session])
+
+  const fetchUserStats = async () => {
+    try {
+      const response = await fetch('/api/users/stats')
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
+      }
+    } catch (error) {
+      console.error('Error fetching user stats:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (status === "loading" || loading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="animate-pulse">
@@ -29,45 +71,15 @@ export default function DashboardPage() {
     redirect("/login")
   }
 
-  // Mock data for demonstration
-  const userStats = {
-    totalPoints: 347,
-    position: 12,
-    correctPredictions: 23,
-    totalPredictions: 45,
-    successRate: 51.1,
-    streak: 3,
+  if (!stats) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <p className="text-gray-600">Erro ao carregar estatísticas</p>
+        </div>
+      </div>
+    )
   }
-
-  const recentMatches = [
-    {
-      id: 1,
-      player1: "Carlos Silva",
-      player2: "João Santos",
-      result: "2-1",
-      userPrediction: "Carlos Silva",
-      points: 8,
-      correct: true,
-    },
-    {
-      id: 2,
-      player1: "Pedro Oliveira",
-      player2: "Lucas Costa",
-      result: "2-0",
-      userPrediction: "Lucas Costa",
-      points: 0,
-      correct: false,
-    },
-    {
-      id: 3,
-      player1: "André Ferreira",
-      player2: "Rafael Lima",
-      result: "2-1",
-      userPrediction: "André Ferreira",
-      points: 15,
-      correct: true,
-    },
-  ]
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -89,9 +101,9 @@ export default function DashboardPage() {
             <Trophy className="h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{userStats.totalPoints}</div>
+            <div className="text-2xl font-bold">{stats.totalPoints}</div>
             <p className="text-xs text-emerald-100">
-              +12 pontos esta semana
+              Posição #{stats.position}
             </p>
           </CardContent>
         </Card>
@@ -102,9 +114,9 @@ export default function DashboardPage() {
             <Award className="h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">#{userStats.position}</div>
+            <div className="text-2xl font-bold">#{stats.position}</div>
             <p className="text-xs text-blue-100">
-              de 156 participantes
+              no torneio
             </p>
           </CardContent>
         </Card>
@@ -115,9 +127,9 @@ export default function DashboardPage() {
             <Target className="h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{userStats.successRate}%</div>
+            <div className="text-2xl font-bold">{stats.successRate}%</div>
             <p className="text-xs text-purple-100">
-              {userStats.correctPredictions} de {userStats.totalPredictions} palpites
+              {stats.correctPredictions} de {stats.totalPredictions} palpites
             </p>
           </CardContent>
         </Card>
@@ -128,7 +140,7 @@ export default function DashboardPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-600">{userStats.streak}</div>
+            <div className="text-2xl font-bold text-emerald-600">{stats.streak}</div>
             <p className="text-xs text-muted-foreground">
               acertos consecutivos
             </p>
@@ -141,14 +153,12 @@ export default function DashboardPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">{stats.upcomingMatches}</div>
             <p className="text-xs text-muted-foreground">
-              partidas para apostar hoje
+              partidas para apostar
             </p>
           </CardContent>
         </Card>
-
-
       </div>
 
       {/* Quick Actions */}
@@ -192,28 +202,34 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentMatches.map((match) => (
-                <div key={match.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">
-                      {match.player1} vs {match.player2}
+              {stats.recentMatches.length > 0 ? (
+                stats.recentMatches.map((match) => (
+                  <div key={match.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">
+                        {match.player1} vs {match.player2}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        Resultado: {match.result} • Palpite: {match.userPrediction}
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-600">
-                      Resultado: {match.result} • Palpite: {match.userPrediction}
+                    <div className={`flex items-center space-x-2 ${
+                      match.correct ? 'text-emerald-600' : 'text-red-600'
+                    }`}>
+                      <span className="text-sm font-medium">
+                        {match.correct ? `+${match.points}` : '0'} pts
+                      </span>
+                      <div className={`w-2 h-2 rounded-full ${
+                        match.correct ? 'bg-emerald-600' : 'bg-red-600'
+                      }`} />
                     </div>
                   </div>
-                  <div className={`flex items-center space-x-2 ${
-                    match.correct ? 'text-emerald-600' : 'text-red-600'
-                  }`}>
-                    <span className="text-sm font-medium">
-                      {match.correct ? `+${match.points}` : '0'} pts
-                    </span>
-                    <div className={`w-2 h-2 rounded-full ${
-                      match.correct ? 'bg-emerald-600' : 'bg-red-600'
-                    }`} />
-                  </div>
+                ))
+              ) : (
+                <div className="text-center text-gray-500 py-4">
+                  Nenhum resultado recente
                 </div>
-              ))}
+              )}
             </div>
             <div className="mt-4">
               <Button asChild variant="outline" className="w-full">

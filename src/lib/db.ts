@@ -1,35 +1,12 @@
-// Simple mock to avoid Prisma issues during build
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports */
-let prisma: any
+import { PrismaClient } from '@prisma/client'
 
-if (process.env.NODE_ENV === 'production') {
-  // Mock implementation for build
-  prisma = {
-    user: {
-      findUnique: () => Promise.resolve(null),
-      create: () => Promise.resolve({}),
-    }
-  }
-} else {
-  try {
-    const { PrismaClient } = require('@prisma/client')
-    
-    const globalForPrisma = globalThis as unknown as {
-      prisma: any | undefined
-    }
-
-    prisma = globalForPrisma.prisma ?? new PrismaClient()
-
-    globalForPrisma.prisma = prisma
-  } catch {
-    // Fallback mock if Prisma is not available
-    prisma = {
-      user: {
-        findUnique: () => Promise.resolve(null),
-        create: () => Promise.resolve({}),
-      }
-    }
-  }
+declare global {
+  // eslint-disable-next-line no-var
+  var __globalPrisma__: PrismaClient | undefined
 }
 
-export { prisma }
+export const prisma = globalThis.__globalPrisma__ ?? new PrismaClient()
+
+if (process.env.NODE_ENV !== 'production') {
+  globalThis.__globalPrisma__ = prisma
+}

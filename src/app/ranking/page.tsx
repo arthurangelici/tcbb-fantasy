@@ -1,204 +1,41 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Trophy, TrendingUp, Target, Star, Medal, Crown, Award } from "lucide-react"
 
-// Mock ranking data - all players with their points by category
-const mockRankingData: PlayerData[] = [
-  {
-    id: 1,
-    name: 'João Silva',
-    email: 'joao@tcbb.com',
-    category: 'A',
-    pointsByCategory: {
-      general: 347,
-      A: 167,
-      B: 89,
-      C: 91
-    },
-    predictionsByCategory: {
-      general: { correct: 23, total: 45 },
-      A: { correct: 12, total: 18 },
-      B: { correct: 6, total: 14 },
-      C: { correct: 5, total: 13 }
-    },
-    streak: 3
-  },
-  {
-    id: 2,
-    name: 'Maria Santos',
-    email: 'maria@tcbb.com',
-    category: 'B',
-    pointsByCategory: {
-      general: 335,
-      A: 145,
-      B: 120,
-      C: 70
-    },
-    predictionsByCategory: {
-      general: { correct: 21, total: 42 },
-      A: { correct: 8, total: 16 },
-      B: { correct: 9, total: 15 },
-      C: { correct: 4, total: 11 }
-    },
-    streak: 1
-  },
-  {
-    id: 3,
-    name: 'Pedro Costa',
-    email: 'pedro@tcbb.com',
-    category: 'A',
-    pointsByCategory: {
-      general: 298,
-      A: 156,
-      B: 78,
-      C: 64
-    },
-    predictionsByCategory: {
-      general: { correct: 19, total: 39 },
-      A: { correct: 11, total: 17 },
-      B: { correct: 5, total: 12 },
-      C: { correct: 3, total: 10 }
-    },
-    streak: 2
-  },
-  {
-    id: 4,
-    name: 'Ana Oliveira',
-    email: 'ana@tcbb.com',
-    category: 'C',
-    pointsByCategory: {
-      general: 267,
-      A: 89,
-      B: 67,
-      C: 111
-    },
-    predictionsByCategory: {
-      general: { correct: 18, total: 41 },
-      A: { correct: 6, total: 15 },
-      B: { correct: 4, total: 13 },
-      C: { correct: 8, total: 13 }
-    },
-    streak: 0
-  },
-  {
-    id: 5,
-    name: 'Carlos Ferreira',
-    email: 'carlos@tcbb.com',
-    category: 'B',
-    pointsByCategory: {
-      general: 245,
-      A: 78,
-      B: 134,
-      C: 33
-    },
-    predictionsByCategory: {
-      general: { correct: 16, total: 38 },
-      A: { correct: 5, total: 14 },
-      B: { correct: 8, total: 14 },
-      C: { correct: 3, total: 10 }
-    },
-    streak: 1
-  },
-  {
-    id: 6,
-    name: 'Luisa Lima',
-    email: 'luisa@tcbb.com',
-    category: 'A',
-    pointsByCategory: {
-      general: 223,
-      A: 123,
-      B: 56,
-      C: 44
-    },
-    predictionsByCategory: {
-      general: { correct: 15, total: 36 },
-      A: { correct: 9, total: 16 },
-      B: { correct: 4, total: 11 },
-      C: { correct: 2, total: 9 }
-    },
-    streak: 2
-  },
-  {
-    id: 7,
-    name: 'Bruno Martins',
-    email: 'bruno@tcbb.com',
-    category: 'C',
-    pointsByCategory: {
-      general: 201,
-      A: 56,
-      B: 45,
-      C: 100
-    },
-    predictionsByCategory: {
-      general: { correct: 14, total: 35 },
-      A: { correct: 4, total: 13 },
-      B: { correct: 3, total: 11 },
-      C: { correct: 7, total: 11 }
-    },
-    streak: 0
-  },
-  {
-    id: 8,
-    name: 'Gabriela Rocha',
-    email: 'gabi@tcbb.com',
-    category: 'B',
-    pointsByCategory: {
-      general: 189,
-      A: 67,
-      B: 89,
-      C: 33
-    },
-    predictionsByCategory: {
-      general: { correct: 13, total: 33 },
-      A: { correct: 4, total: 12 },
-      B: { correct: 6, total: 12 },
-      C: { correct: 3, total: 9 }
-    },
-    streak: 1
-  },
-  {
-    id: 9,
-    name: 'Felipe Alves',
-    email: 'felipe@tcbb.com',
-    category: 'A',
-    pointsByCategory: {
-      general: 167,
-      A: 98,
-      B: 34,
-      C: 35
-    },
-    predictionsByCategory: {
-      general: { correct: 12, total: 32 },
-      A: { correct: 7, total: 14 },
-      B: { correct: 3, total: 10 },
-      C: { correct: 2, total: 8 }
-    },
-    streak: 3
-  },
-  {
-    id: 10,
-    name: 'Marcos Pereira',
-    email: 'marcos@tcbb.com',
-    category: 'C',
-    pointsByCategory: {
-      general: 145,
-      A: 34,
-      B: 23,
-      C: 88
-    },
-    predictionsByCategory: {
-      general: { correct: 11, total: 31 },
-      A: { correct: 3, total: 11 },
-      B: { correct: 2, total: 9 },
-      C: { correct: 6, total: 11 }
-    },
-    streak: 0
-  },
-]
+interface PlayerData {
+  id: string;
+  name: string;
+  email: string;
+  category: 'A' | 'B' | 'C';
+  pointsByCategory: {
+    general: number;
+    A: number;
+    B: number;
+    C: number;
+  };
+  predictionsByCategory: {
+    general: { correct: number; total: number };
+    A: { correct: number; total: number };
+    B: { correct: number; total: number };
+    C: { correct: number; total: number };
+  };
+  streak: number;
+  position?: number;
+  previousPosition?: number;
+  trend?: 'up' | 'down' | 'stable';
+}
+
+interface RankingStats {
+  totalPlayers: number;
+  averagePoints: number;
+  averageSuccessRate: number;
+  topPlayer: PlayerData | null;
+}
 
 const getRankingIcon = (position: number) => {
   switch (position) {
@@ -233,29 +70,6 @@ const getTrendColor = (trend: string) => {
     default:
       return 'text-gray-400'
   }
-}
-
-interface PlayerData {
-  id: number;
-  name: string;
-  email: string;
-  category: 'A' | 'B' | 'C';
-  pointsByCategory: {
-    general: number;
-    A: number;
-    B: number;
-    C: number;
-  };
-  predictionsByCategory: {
-    general: { correct: number; total: number };
-    A: { correct: number; total: number };
-    B: { correct: number; total: number };
-    C: { correct: number; total: number };
-  };
-  streak: number;
-  position?: number;
-  previousPosition?: number;
-  trend?: 'up' | 'down' | 'stable';
 }
 
 function PlayerRankingCard({ 
@@ -336,46 +150,60 @@ function PlayerRankingCard({
 }
 
 export default function RankingPage() {
+  const { data: session } = useSession()
   const [filter, setFilter] = useState<'all' | 'top10'>('all')
   const [categoryFilter, setCategoryFilter] = useState<'general' | 'A' | 'B' | 'C'>('general')
+  const [ranking, setRanking] = useState<PlayerData[]>([])
+  const [stats, setStats] = useState<RankingStats | null>(null)
+  const [loading, setLoading] = useState(true)
   
-  // Mock current user
-  const currentUserId = 3 // Pedro Costa
-  
-  // Get ranking data based on category filter
-  const getRankingData = () => {
-    // Sort players by points in the selected category
-    const sortedPlayers = [...mockRankingData].sort((a, b) => {
-      const pointsA = a.pointsByCategory[categoryFilter] || 0
-      const pointsB = b.pointsByCategory[categoryFilter] || 0
-      return pointsB - pointsA
-    })
-    
-    // Add position and trend information
-    return sortedPlayers.map((player, index) => ({
-      ...player,
-      position: index + 1,
-      previousPosition: index + 1, // Simplified for demo
-      trend: 'stable' as const
-    }))
+  useEffect(() => {
+    fetchRanking()
+  }, [categoryFilter])
+
+  const fetchRanking = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/ranking?category=${categoryFilter}`)
+      if (response.ok) {
+        const data = await response.json()
+        setRanking(data.ranking)
+        setStats(data.stats)
+      }
+    } catch (error) {
+      console.error('Error fetching ranking:', error)
+    } finally {
+      setLoading(false)
+    }
   }
   
-  const rankingData = getRankingData()
-  
-  const filteredRanking = rankingData.filter(player => {
+  const filteredRanking = ranking.filter(player => {
     if (filter === 'top10') return player.position <= 10
     return true
   })
 
-  const topStats = {
-    totalPlayers: rankingData.length,
-    averagePoints: Math.round(rankingData.reduce((acc, p) => acc + (p.pointsByCategory[categoryFilter] || 0), 0) / rankingData.length),
-    averageSuccessRate: Number((rankingData.reduce((acc, p) => {
-      const predictions = p.predictionsByCategory[categoryFilter] || { correct: 0, total: 0 }
-      const rate = predictions.total > 0 ? (predictions.correct / predictions.total) * 100 : 0
-      return acc + rate
-    }, 0) / rankingData.length).toFixed(1)),
-    topPlayer: rankingData[0]
+  // Get current user ID for highlighting
+  const currentUserId = session?.user?.email ? 
+    ranking.find(p => p.email === session.user.email)?.id : null
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/2 mb-6"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -423,44 +251,48 @@ export default function RankingPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardContent className="flex items-center p-6">
-            <Trophy className="h-8 w-8 text-emerald-600 mr-4" />
-            <div>
-              <div className="text-2xl font-bold">{topStats.totalPlayers}</div>
-              <p className="text-sm text-gray-600">Participantes</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center p-6">
-            <Star className="h-8 w-8 text-blue-600 mr-4" />
-            <div>
-              <div className="text-2xl font-bold">{topStats.averagePoints}</div>
-              <p className="text-sm text-gray-600">Pontos Médios</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center p-6">
-            <Target className="h-8 w-8 text-purple-600 mr-4" />
-            <div>
-              <div className="text-2xl font-bold">{topStats.averageSuccessRate}%</div>
-              <p className="text-sm text-gray-600">Taxa Média</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center p-6">
-            <Crown className="h-8 w-8 text-yellow-500 mr-4" />
-            <div>
-              <div className="text-2xl font-bold">{topStats.topPlayer?.pointsByCategory[categoryFilter] || 0}</div>
-              <p className="text-sm text-gray-600">Líder</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardContent className="flex items-center p-6">
+              <Trophy className="h-8 w-8 text-emerald-600 mr-4" />
+              <div>
+                <div className="text-2xl font-bold">{stats.totalPlayers}</div>
+                <p className="text-sm text-gray-600">Participantes</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex items-center p-6">
+              <Star className="h-8 w-8 text-blue-600 mr-4" />
+              <div>
+                <div className="text-2xl font-bold">{stats.averagePoints}</div>
+                <p className="text-sm text-gray-600">Pontos Médios</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex items-center p-6">
+              <Target className="h-8 w-8 text-purple-600 mr-4" />
+              <div>
+                <div className="text-2xl font-bold">{stats.averageSuccessRate}%</div>
+                <p className="text-sm text-gray-600">Taxa Média</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex items-center p-6">
+              <Crown className="h-8 w-8 text-yellow-500 mr-4" />
+              <div>
+                <div className="text-2xl font-bold">
+                  {stats.topPlayer?.pointsByCategory[categoryFilter] || 0}
+                </div>
+                <p className="text-sm text-gray-600">Líder</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* View Filters */}
       <div className="flex flex-wrap gap-2 mb-6">

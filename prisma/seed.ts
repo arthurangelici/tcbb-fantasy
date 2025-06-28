@@ -100,17 +100,48 @@ async function main() {
     }
   }
 
-  // Create matches for each category (first round)
+  // Create tournament structure: Quarterfinals, Semifinals, Finals for each category
   const matches = []
   const tournamentCategories = ['A', 'B', 'C']
   
   for (const category of tournamentCategories) {
     const categoryPlayers = players.filter(p => p.category === category)
-    const matchCount = Math.floor(categoryPlayers.length / 2)
     
-    for (let i = 0; i < matchCount; i++) {
-      const player1 = categoryPlayers[i * 2]
-      const player2 = categoryPlayers[i * 2 + 1]
+    // Quarterfinals - 4 matches per category (8 players)
+    const quarterfinalsPlayers = categoryPlayers.slice(0, 8)
+    for (let i = 0; i < 4; i++) {
+      const player1 = quarterfinalsPlayers[i * 2]
+      const player2 = quarterfinalsPlayers[i * 2 + 1]
+      
+      if (player1 && player2) {
+        const isFinished = i < 2 // First 2 quarterfinals per category are finished
+        const match = await prisma.match.create({
+          data: {
+            player1Id: player1.id,
+            player2Id: player2.id,
+            category: category as any,
+            round: 'QUARTERFINALS',
+            status: isFinished ? 'FINISHED' : 'SCHEDULED',
+            scheduledAt: new Date(Date.now() + i * 24 * 60 * 60 * 1000),
+            ...(isFinished && {
+              finishedAt: new Date(Date.now() - (2 - i) * 24 * 60 * 60 * 1000),
+              winner: Math.random() > 0.5 ? 'player1' : 'player2',
+              player1Sets: Math.random() > 0.5 ? 2 : Math.random() > 0.5 ? 1 : 0,
+              player2Sets: Math.random() > 0.5 ? 2 : Math.random() > 0.5 ? 1 : 0,
+              hadTiebreak: Math.random() > 0.7,
+              totalDuration: Math.floor(Math.random() * 120) + 60,
+            }),
+          },
+        })
+        matches.push(match)
+      }
+    }
+
+    // Semifinals - 2 matches per category
+    const semifinalistsPlayers = categoryPlayers.slice(0, 4)
+    for (let i = 0; i < 2; i++) {
+      const player1 = semifinalistsPlayers[i * 2]
+      const player2 = semifinalistsPlayers[i * 2 + 1]
       
       if (player1 && player2) {
         const match = await prisma.match.create({
@@ -118,22 +149,29 @@ async function main() {
             player1Id: player1.id,
             player2Id: player2.id,
             category: category as any,
-            round: 'FIRST_ROUND',
-            status: i < 3 ? 'FINISHED' : 'SCHEDULED', // First 3 matches per category are finished
-            scheduledAt: new Date(Date.now() + i * 24 * 60 * 60 * 1000), // Spread over days
-            ...(i < 3 && {
-              // Add results for first 3 matches per category
-              finishedAt: new Date(Date.now() - (3 - i) * 24 * 60 * 60 * 1000),
-              winner: Math.random() > 0.5 ? 'player1' : 'player2',
-              player1Sets: Math.random() > 0.5 ? 2 : Math.random() > 0.5 ? 1 : 0,
-              player2Sets: Math.random() > 0.5 ? 2 : Math.random() > 0.5 ? 1 : 0,
-              hadTiebreak: Math.random() > 0.7,
-              totalDuration: Math.floor(Math.random() * 120) + 60, // 60-180 minutes
-            }),
+            round: 'SEMIFINALS',
+            status: 'SCHEDULED',
+            scheduledAt: new Date(Date.now() + (4 + i) * 24 * 60 * 60 * 1000),
           },
         })
         matches.push(match)
       }
+    }
+
+    // Final - 1 match per category
+    const finalistsPlayers = categoryPlayers.slice(0, 2)
+    if (finalistsPlayers.length >= 2) {
+      const match = await prisma.match.create({
+        data: {
+          player1Id: finalistsPlayers[0].id,
+          player2Id: finalistsPlayers[1].id,
+          category: category as any,
+          round: 'FINAL',
+          status: 'SCHEDULED',
+          scheduledAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      })
+      matches.push(match)
     }
   }
 
@@ -187,7 +225,7 @@ async function main() {
   console.log(`   - 1 admin user (admin@tcbb.com / admin123)`)
   console.log(`   - 10 test users with categories (user1@tcbb.com / user1123, etc.)`)
   console.log(`   - ${Object.values(playersByCategory).flat().length} players across 3 categories`)
-  console.log(`   - ${matches.length} first round matches across all categories`)
+  console.log(`   - ${matches.length} tournament matches (quarterfinals, semifinals, finals)`)
   console.log(`   - Sample predictions and tournament bets for each category`)
 }
 
