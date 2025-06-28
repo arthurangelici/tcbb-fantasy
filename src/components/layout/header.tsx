@@ -39,6 +39,11 @@ export function Header() {
             <Link href="/ranking" className="text-gray-700 hover:text-emerald-600 transition-colors">
               Ranking
             </Link>
+            {session?.user?.role === "ADMIN" && (
+              <Link href="/admin" className="text-gray-700 hover:text-emerald-600 transition-colors">
+                Admin
+              </Link>
+            )}
           </nav>
 
           {/* User Menu */}
@@ -116,6 +121,15 @@ export function Header() {
               >
                 Ranking
               </Link>
+              {session?.user?.role === "ADMIN" && (
+                <Link 
+                  href="/admin" 
+                  className="text-gray-700 hover:text-emerald-600 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Admin
+                </Link>
+              )}
             </nav>
           </div>
         )}
