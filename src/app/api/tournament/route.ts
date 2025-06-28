@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     
     // Get all matches with players
     const matches = await prisma.match.findMany({
-      where: category && category !== 'ALL' ? { category: category as any } : {},
+      where: category && category !== 'ALL' ? { category: category as 'A' | 'B' | 'C' } : {},
       include: {
         player1: true,
         player2: true
@@ -21,7 +21,20 @@ export async function GET(request: NextRequest) {
     })
 
     // Group matches by category and round
-    const tournamentData: Record<string, any> = {}
+    const tournamentData: Record<string, {
+      rounds: Array<{
+        name: string
+        matches: Array<{
+          id: string
+          player1: string
+          player2: string
+          winner: string | null
+          score: string | null
+          completed: boolean
+          category: string
+        }>
+      }>
+    }> = {}
     
     matches.forEach(match => {
       const cat = match.category
@@ -40,7 +53,7 @@ export async function GET(request: NextRequest) {
 
       const roundName = `${roundNames[match.round]} - Categoria ${cat}`
       
-      let round = tournamentData[cat].rounds.find((r: any) => r.name === roundName)
+      let round = tournamentData[cat].rounds.find(r => r.name === roundName)
       if (!round) {
         round = { name: roundName, matches: [] }
         tournamentData[cat].rounds.push(round)
@@ -70,7 +83,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Category-specific stats
-    const categoryStats: Record<string, any> = {}
+    const categoryStats: Record<string, { total: number; completed: number }> = {}
     for (const cat of ['A', 'B', 'C']) {
       const categoryMatches = matches.filter(m => m.category === cat)
       categoryStats[cat] = {

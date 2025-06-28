@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     
@@ -75,7 +75,6 @@ export async function GET(request: NextRequest) {
 
     const formattedRecentMatches = recentMatches.map(match => {
       const prediction = match.predictions[0]
-      const actualWinner = match.winner === 'player1' ? match.player1.name : match.player2.name
       const predictedWinner = prediction?.winner === 'player1' ? match.player1.name : match.player2.name
       
       return {

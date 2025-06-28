@@ -53,7 +53,7 @@ async function main() {
 
   // Create admin user
   const adminPassword = await bcrypt.hash('admin123', 12)
-  const admin = await prisma.user.create({
+  await prisma.user.create({
     data: {
       name: 'Administrador TCBB',
       email: 'admin@tcbb.com',
@@ -75,7 +75,7 @@ async function main() {
         password,
         role: 'USER',
         points: Math.floor(Math.random() * 500),
-        category: categoryOptions[Math.floor(Math.random() * categoryOptions.length)] as any,
+        category: categoryOptions[Math.floor(Math.random() * categoryOptions.length)] as 'A' | 'B' | 'C',
       },
     })
     testUsers.push(user)
@@ -93,7 +93,7 @@ async function main() {
           ranking: rankingCounter++,
           age: Math.floor(Math.random() * 20) + 20, // Age between 20-40
           nationality: 'Brasil',
-          category: category as any,
+          category: category as 'A' | 'B' | 'C',
         },
       })
       players.push(player)
@@ -119,7 +119,7 @@ async function main() {
           data: {
             player1Id: player1.id,
             player2Id: player2.id,
-            category: category as any,
+            category: category as 'A' | 'B' | 'C',
             round: 'QUARTERFINALS',
             status: isFinished ? 'FINISHED' : 'SCHEDULED',
             scheduledAt: new Date(Date.now() + i * 24 * 60 * 60 * 1000),
@@ -148,7 +148,7 @@ async function main() {
           data: {
             player1Id: player1.id,
             player2Id: player2.id,
-            category: category as any,
+            category: category as 'A' | 'B' | 'C',
             round: 'SEMIFINALS',
             status: 'SCHEDULED',
             scheduledAt: new Date(Date.now() + (4 + i) * 24 * 60 * 60 * 1000),
@@ -165,7 +165,7 @@ async function main() {
         data: {
           player1Id: finalistsPlayers[0].id,
           player2Id: finalistsPlayers[1].id,
-          category: category as any,
+          category: category as 'A' | 'B' | 'C',
           round: 'FINAL',
           status: 'SCHEDULED',
           scheduledAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -210,8 +210,8 @@ async function main() {
         await prisma.tournamentBet.create({
           data: {
             userId: user.id,
-            type: betType as any,
-            category: category as any,
+            type: betType as 'CHAMPION' | 'RUNNER_UP' | 'SEMIFINALIST' | 'QUARTERFINALIST',
+            category: category as 'A' | 'B' | 'C',
             playerId: categoryPlayers[Math.floor(Math.random() * categoryPlayers.length)].id,
             pointsEarned: 0,
           },

@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Trophy, Target, Clock, TrendingUp, Star, Flame } from "lucide-react"
+import { Trophy, Target, Clock, TrendingUp, Star } from "lucide-react"
 
 interface Match {
   id: number
@@ -363,9 +363,9 @@ export default function PredictionsPage() {
     if (session?.user?.email) {
       fetchUserStats()
     }
-  }, [session, selectedMatchCategory])
+  }, [session, selectedMatchCategory, fetchPredictionsData])
 
-  const fetchPredictionsData = async () => {
+  const fetchPredictionsData = useCallback(async () => {
     try {
       setLoading(true)
       const categoryParam = selectedMatchCategory === 'ALL' ? '' : `?category=${selectedMatchCategory}`
@@ -381,7 +381,7 @@ export default function PredictionsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedMatchCategory])
 
   const fetchUserStats = async () => {
     try {

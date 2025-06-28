@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       where: {
         AND: [
           { status: 'SCHEDULED' },
-          category && category !== 'ALL' ? { category: category as any } : {}
+          category && category !== 'ALL' ? { category: category as 'A' | 'B' | 'C' } : {}
         ]
       },
       include: {
@@ -25,7 +25,16 @@ export async function GET(request: NextRequest) {
     })
 
     // Group matches by category
-    const matchesByCategory: Record<string, any[]> = {}
+    const matchesByCategory: Record<string, Array<{
+      id: string
+      player1: { name: string; ranking: number }
+      player2: { name: string; ranking: number }
+      scheduledAt?: string
+      status: string
+      round: string
+      canPredict: boolean
+      category: string
+    }>> = {}
     
     matches.forEach(match => {
       const cat = match.category
@@ -34,7 +43,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Map database round enum to display names
-      const roundNames = {
+      const roundNames: Record<string, string> = {
         'FIRST_ROUND': '1ª Rodada',
         'ROUND_OF_16': 'Oitavas de Final', 
         'QUARTERFINALS': 'Quartas de Final',
