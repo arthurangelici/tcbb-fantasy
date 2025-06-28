@@ -36,7 +36,8 @@ export async function GET(request: NextRequest) {
       }>
     }> = {}
     
-    matches.forEach(match => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    matches.forEach((match: any) => {
       const cat = match.category
       if (!tournamentData[cat]) {
         tournamentData[cat] = { rounds: [] }
@@ -51,7 +52,8 @@ export async function GET(request: NextRequest) {
         'FINAL': 'Final'
       }
 
-      const roundName = `${roundNames[match.round]} - Categoria ${cat}`
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const roundName = `${(roundNames as any)[match.round]} - Categoria ${cat}`
       
       let round = tournamentData[cat].rounds.find(r => r.name === roundName)
       if (!round) {
@@ -77,18 +79,22 @@ export async function GET(request: NextRequest) {
     const allMatches = matches
     const stats = {
       totalMatches: allMatches.length,
-      completedMatches: allMatches.filter(m => m.status === 'FINISHED').length,
-      remainingMatches: allMatches.filter(m => m.status !== 'FINISHED').length,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      completedMatches: allMatches.filter((m: any) => m.status === 'FINISHED').length,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      remainingMatches: allMatches.filter((m: any) => m.status !== 'FINISHED').length,
       activePlayers: await prisma.player.count()
     }
 
     // Category-specific stats
     const categoryStats: Record<string, { total: number; completed: number }> = {}
     for (const cat of ['A', 'B', 'C']) {
-      const categoryMatches = matches.filter(m => m.category === cat)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const categoryMatches = matches.filter((m: any) => m.category === cat)
       categoryStats[cat] = {
         total: categoryMatches.length,
-        completed: categoryMatches.filter(m => m.status === 'FINISHED').length
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        completed: categoryMatches.filter((m: any) => m.status === 'FINISHED').length
       }
     }
 

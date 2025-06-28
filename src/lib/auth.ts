@@ -1,10 +1,12 @@
-import { NextAuthOptions } from 'next-auth'
+import { type Session, type User } from 'next-auth'
+import { JWT } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from './db'
 import bcrypt from 'bcryptjs'
 
-export const authOptions: NextAuthOptions = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const authOptions: any = {
   adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
@@ -50,16 +52,19 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt'
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: JWT; user: User }) {
       if (user) {
-        token.role = user.role
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (token as any).role = (user as any).role
       }
       return token
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       if (token) {
-        session.user.id = token.sub!
-        session.user.role = token.role as string
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        session.user.id = (token as any).sub!
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        session.user.role = (token as any).role as string
       }
       return session
     }

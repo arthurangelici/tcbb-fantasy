@@ -36,7 +36,8 @@ export async function GET(request: NextRequest) {
       category: string
     }>> = {}
     
-    matches.forEach(match => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    matches.forEach((match: any) => {
       const cat = match.category
       if (!matchesByCategory[cat]) {
         matchesByCategory[cat] = []

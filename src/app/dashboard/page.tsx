@@ -86,7 +86,7 @@ export default function DashboardPage() {
       {/* Welcome Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Bem-vindo, {session.user.name || session.user.email}!
+          Bem-vindo, {session.user?.name || session.user?.email}!
         </h1>
         <p className="text-gray-600">
           Acompanhe suas estatísticas e faça novos palpites no torneio

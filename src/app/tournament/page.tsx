@@ -85,10 +85,6 @@ export default function TournamentPage() {
   const [categoryStats, setCategoryStats] = useState<CategoryStats>({})
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchTournamentData()
-  }, [selectedCategory, fetchTournamentData])
-
   const fetchTournamentData = useCallback(async () => {
     try {
       setLoading(true)
@@ -106,6 +102,10 @@ export default function TournamentPage() {
       setLoading(false)
     }
   }, [selectedCategory])
+
+  useEffect(() => {
+    fetchTournamentData()
+  }, [selectedCategory, fetchTournamentData])
 
   // Get tournament data based on selected category
   const getTournamentData = () => {
