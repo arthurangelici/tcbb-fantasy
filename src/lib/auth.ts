@@ -60,7 +60,7 @@ export const authOptions: any = {
       return token
     },
     async session({ session, token }: { session: Session; token: JWT }) {
-      if (token) {
+      if (token && session.user) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         session.user.id = (token as any).sub!
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
