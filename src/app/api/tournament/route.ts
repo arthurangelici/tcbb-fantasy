@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
       categoryStats
     })
   } catch (error) {
-    console.error('Error fetching tournament data:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('[TOURNAMENT_GET]', error)
+    return new NextResponse('Internal error', { status: 500 })
   }
 }
