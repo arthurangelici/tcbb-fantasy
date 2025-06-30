@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rankingData = users.map((user: any) => {
       const pointsByCategory = {
-        general: user.points,
+        general: 0, // Start general points at 0
         A: 0,
         B: 0,
         C: 0
@@ -40,32 +40,33 @@ export async function GET(request: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       user.predictions.forEach((prediction: any) => {
         const matchCategory = prediction.match.category
+        const points = prediction.pointsEarned || 0; // Ensure points is a number
+
+        // Add to general stats
+        pointsByCategory.general += points;
+        predictionsByCategory.general.total++
+        if (points > 0) {
+          predictionsByCategory.general.correct++
+        }
         
         // Add to category-specific stats
         if (matchCategory === 'A' || matchCategory === 'B' || matchCategory === 'C') {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (pointsByCategory as any)[matchCategory] += prediction.pointsEarned
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (pointsByCategory as any)[matchCategory] += points;
           (predictionsByCategory as any)[matchCategory].total++
-          if (prediction.pointsEarned > 0) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if (points > 0) {
             (predictionsByCategory as any)[matchCategory].correct++
           }
-        }
-
-        // Add to general stats
-        predictionsByCategory.general.total++
-        if (prediction.pointsEarned > 0) {
-          predictionsByCategory.general.correct++
         }
       })
 
       // Add tournament bet points by category
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       user.tournamentBets.forEach((bet: any) => {
+        const points = bet.pointsEarned || 0; // Ensure points is a number
+        pointsByCategory.general += points;
+
         if (bet.category && (bet.category === 'A' || bet.category === 'B' || bet.category === 'C')) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (pointsByCategory as any)[bet.category] += bet.pointsEarned
+          (pointsByCategory as any)[bet.category] += points;
         }
       })
 
