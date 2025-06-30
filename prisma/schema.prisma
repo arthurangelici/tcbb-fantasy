@@ -38,17 +38,17 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String              @id @default(cuid())
   name          String?
-  email         String    @unique
+  email         String              @unique
   emailVerified DateTime?
   image         String?
   password      String?
-  role          UserRole  @default(USER)
-  points        Int       @default(0)
+  role          UserRole            @default(USER)
+  points        Int                 @default(0)
   category      TournamentCategory?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
   accounts       Account[]
   sessions       Session[]
@@ -67,42 +67,43 @@ model VerificationToken {
 }
 
 model Player {
-  id          String   @id @default(cuid())
+  id          String             @id @default(cuid())
   name        String
-  ranking     Int      @unique
+  ranking     Int                @unique
   image       String?
-  nationality String   @default("Brasil")
+  nationality String             @default("Brasil")
   age         Int?
   category    TournamentCategory
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 
-  matchesAsPlayer1 Match[] @relation("Player1Matches")
-  matchesAsPlayer2 Match[] @relation("Player2Matches")
-  wins             Match[] @relation("WonMatches")
+  matchesAsPlayer1 Match[]         @relation("Player1Matches")
+  matchesAsPlayer2 Match[]         @relation("Player2Matches")
+  wins             Match[]         @relation("WonMatches")
   tournamentBets   TournamentBet[]
 
   @@map("players")
 }
 
 model Match {
-  id            String    @id @default(cuid())
+  id            String             @id @default(cuid())
   player1Id     String
   player2Id     String
-  player1       Player    @relation("Player1Matches", fields: [player1Id], references: [id])
-  player2       Player    @relation("Player2Matches", fields: [player2Id], references: [id])
+  player1       Player             @relation("Player1Matches", fields: [player1Id], references: [id])
+  player2       Player             @relation("Player2Matches", fields: [player2Id], references: [id])
   round         TournamentRound
   category      TournamentCategory
-  status        MatchStatus @default(SCHEDULED)
+  status        MatchStatus        @default(SCHEDULED)
   winnerId      String?
+  winner        Player?            @relation("WonMatches", fields: [winnerId], references: [id])
   predictions   Prediction[]
-  scheduledAt   DateTime? @db.Timestamp(6)
-  finishedAt    DateTime? @db.Timestamp(6)
-  setScores     Json?     @db.Json
-  hadTiebreak   Boolean?  @default(false)
+  scheduledAt   DateTime?          @db.Timestamp(6)
+  finishedAt    DateTime?          @db.Timestamp(6)
+  setScores     Json?              @db.Json
+  hadTiebreak   Boolean?           @default(false)
   totalDuration Int? // in minutes
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 }
 
 model Prediction {
@@ -111,16 +112,16 @@ model Prediction {
   matchId String
 
   // Prediction fields
-  winner          String? // player1 or player2
-  exactScore      String? // "2-0" or "2-1"
-  goesToThirdSet  Boolean?
-  firstSetWinner  String? // player1 or player2
+  winner           String? // player1 or player2
+  exactScore       String? // "2-0" or "2-1"
+  goesToThirdSet   Boolean?
+  firstSetWinner   String? // player1 or player2
   willHaveTiebreak Boolean?
   marginOfVictory  MarginType? // CLOSE or COMFORTABLE
-  
+
   // Points earned (calculated after match)
   pointsEarned Int @default(0)
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -132,7 +133,7 @@ model Prediction {
 }
 
 model TournamentBet {
-  id       String @id @default(cuid())
+  id       String              @id @default(cuid())
   userId   String
   type     TournamentBetType
   category TournamentCategory?
@@ -141,14 +142,14 @@ model TournamentBet {
   playerId String?
   matchId  String?
   value    String? // For custom bets like "longest match"
-  
+
   // Points earned
   pointsEarned Int @default(0)
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   player Player? @relation(fields: [playerId], references: [id])
 
   @@unique([userId, type, category])
