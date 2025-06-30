@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
+export const dynamic = 'force-dynamic' // Force dynamic rendering
+
+// Get ranking by category
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { Match, Player } from '@prisma/client'
 
 // Type for the session with user data
 type SessionWithUser = {
@@ -13,6 +14,52 @@ type SessionWithUser = {
     role: string
   }
   expires: string
+}
+
+// Define a type for the match with included players
+type MatchWithPlayers = Match & {
+  player1: Player;
+  player2: Player;
+};
+
+// Helper function to format a match object
+function formatMatch(match: MatchWithPlayers) {
+  const roundNames: Record<string, string> = {
+    'FIRST_ROUND': '1ª Rodada',
+    'ROUND_OF_16': 'Oitavas de Final', 
+    'QUARTERFINALS': 'Quartas de Final',
+    'SEMIFINALS': 'Semifinais',
+    'FINAL': 'Final'
+  }
+
+  let player1Sets = 0;
+  let player2Sets = 0;
+  if (match.status === 'FINISHED' && Array.isArray(match.setScores)) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const set of match.setScores as any[]) {
+      if (set.p1 > set.p2) {
+        player1Sets++;
+      } else if (set.p2 > set.p1) {
+        player2Sets++;
+      }
+    }
+  }
+
+  return {
+    id: match.id,
+    player1: match.player1.name,
+    player2: match.player2.name,
+    round: roundNames[match.round] || match.round,
+    category: match.category,
+    status: match.status, // Return status as is (e.g., 'FINISHED')
+    scheduledAt: match.scheduledAt?.toISOString(),
+    winner: match.winnerId === match.player1Id ? 'PLAYER1' : (match.winnerId === match.player2Id ? 'PLAYER2' : null),
+    setScores: match.setScores || [],
+    player1Sets: player1Sets,
+    player2Sets: player2Sets,
+    hadTiebreak: match.hadTiebreak,
+    totalDuration: match.totalDuration
+  }
 }
 
 // Get all matches for admin
@@ -44,34 +91,7 @@ export async function GET() {
       ]
     })
 
-    // Format matches for admin interface
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const formattedMatches = matches.map((match: any) => {
-      // Map database round enum to display names
-      const roundNames: Record<string, string> = {
-        'FIRST_ROUND': '1ª Rodada',
-        'ROUND_OF_16': 'Oitavas de Final', 
-        'QUARTERFINALS': 'Quartas de Final',
-        'SEMIFINALS': 'Semifinais',
-        'FINAL': 'Final'
-      }
-
-      return {
-        id: match.id,
-        player1: match.player1.name,
-        player2: match.player2.name,
-        round: roundNames[match.round] || match.round,
-        category: match.category,
-        status: match.status.toLowerCase(),
-        scheduledAt: match.scheduledAt?.toISOString(),
-        winner: match.winner,
-        score: match.status === 'FINISHED' ? `${match.player1Sets}-${match.player2Sets}` : null,
-        player1Sets: match.player1Sets,
-        player2Sets: match.player2Sets,
-        hadTiebreak: match.hadTiebreak,
-        totalDuration: match.totalDuration
-      }
-    })
+    const formattedMatches = matches.map(formatMatch)
 
     return NextResponse.json({ matches: formattedMatches })
   } catch (error) {
@@ -179,30 +199,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Format match for response
-    const roundNames: Record<string, string> = {
-      'FIRST_ROUND': '1ª Rodada',
-      'ROUND_OF_16': 'Oitavas de Final', 
-      'QUARTERFINALS': 'Quartas de Final',
-      'SEMIFINALS': 'Semifinais',
-      'FINAL': 'Final'
-    }
-
-    const formattedMatch = {
-      id: newMatch.id,
-      player1: newMatch.player1.name,
-      player2: newMatch.player2.name,
-      round: roundNames[newMatch.round] || newMatch.round,
-      category: newMatch.category,
-      status: newMatch.status.toLowerCase(),
-      scheduledAt: newMatch.scheduledAt?.toISOString(),
-      winner: newMatch.winner,
-      score: null,
-      player1Sets: newMatch.player1Sets,
-      player2Sets: newMatch.player2Sets,
-      hadTiebreak: newMatch.hadTiebreak,
-      totalDuration: newMatch.totalDuration
-    }
+    const formattedMatch = formatMatch(newMatch);
 
     return NextResponse.json({ success: true, match: formattedMatch })
   } catch (error) {
@@ -233,64 +230,150 @@ export async function PUT(request: NextRequest) {
       matchId, 
       player1, 
       player2, 
-      winner, 
-      player1Sets, 
-      player2Sets, 
-      hadTiebreak, 
+      winner, // winner is now 'PLAYER1' or 'PLAYER2'
+      setScores, // Array of {p1: number, p2: number, tiebreak?: string}
       totalDuration 
     } = body
 
-    // If player names are provided, update them
-    if (player1 || player2) {
-      const match = await prisma.match.findUnique({
+    if (!matchId) {
+      return NextResponse.json({ error: 'Match ID is required' }, { status: 400 });
+    }
+
+    // Use a transaction to ensure atomicity
+    const updatedMatch = await prisma.$transaction(async (tx) => {
+      const match = await tx.match.findUnique({
         where: { id: matchId },
         include: { player1: true, player2: true }
-      })
+      });
 
       if (!match) {
-        return NextResponse.json({ error: 'Match not found' }, { status: 404 })
+        // This will cause the transaction to rollback
+        throw new Error('Match not found');
       }
 
-      // Update player names if different
+      // 1. Update player names if they have changed
       if (player1 && player1 !== match.player1.name) {
-        await prisma.player.update({
+        await tx.player.update({
           where: { id: match.player1Id },
           data: { name: player1 }
-        })
+        });
       }
 
       if (player2 && player2 !== match.player2.name) {
-        await prisma.player.update({
+        await tx.player.update({
           where: { id: match.player2Id },
           data: { name: player2 }
-        })
+        });
       }
+
+      const updateData: {
+        status?: 'SCHEDULED' | 'FINISHED' | 'CANCELLED';
+        setScores?: { p1: number; p2: number; tiebreak?: string }[];
+        hadTiebreak?: boolean;
+        winnerId?: string | null;
+        totalDuration?: number | null;
+        finishedAt?: Date;
+      } = {};
+
+      let hasChanges = false;
+
+      // 2. Update match result if setScores is provided
+      if (setScores) {
+        if (!Array.isArray(setScores) || setScores.length === 0) {
+          throw new Error('setScores must be a non-empty array');
+        }
+
+        let hasTiebreak = false;
+        for (const set of setScores) {
+          if (typeof set.p1 !== 'number' || typeof set.p2 !== 'number') {
+            throw new Error('Invalid set score format');
+          }
+          if (set.tiebreak && typeof set.tiebreak === 'string' && set.tiebreak.trim() !== '') {
+            hasTiebreak = true;
+          }
+        }
+        
+        updateData.status = 'FINISHED';
+        updateData.setScores = setScores;
+        updateData.hadTiebreak = hasTiebreak;
+        updateData.winnerId = winner === 'PLAYER1' ? match.player1Id : (winner === 'PLAYER2' ? match.player2Id : null);
+        updateData.finishedAt = new Date();
+
+        if (totalDuration !== undefined) {
+          updateData.totalDuration = totalDuration ? parseInt(totalDuration) : null;
+        }
+        hasChanges = true;
+      }
+
+      // 3. If there are changes, update the match
+      if (hasChanges) {
+        await tx.match.update({
+          where: { id: matchId },
+          data: updateData
+        });
+      }
+
+      // 4. Return the fully updated match data with players
+      return tx.match.findUnique({
+        where: { id: matchId },
+        include: { player1: true, player2: true }
+      });
+    });
+
+    if (!updatedMatch) {
+      return NextResponse.json({ error: 'Failed to retrieve updated match' }, { status: 404 });
     }
 
-    // Update match result
-    const updatedMatch = await prisma.match.update({
-      where: { id: matchId },
-      data: {
-        status: 'FINISHED',
-        winner: winner,
-        player1Sets: parseInt(player1Sets) || 0,
-        player2Sets: parseInt(player2Sets) || 0,
-        hadTiebreak: hadTiebreak || false,
-        totalDuration: totalDuration ? parseInt(totalDuration) : null,
-        finishedAt: new Date()
-      },
-      include: {
-        player1: true,
-        player2: true
-      }
+    const formattedMatch = formatMatch(updatedMatch);
+
+    return NextResponse.json({ success: true, match: formattedMatch });
+
+  } catch (error) {
+    console.error('Error updating match:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
+
+// Delete a match
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions) as SessionWithUser | null
+    
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email }
     })
 
-    // TODO: Calculate and update prediction points for this match
-    // This would involve checking all predictions for this match and awarding points
+    if (!user || user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
-    return NextResponse.json({ success: true, match: updatedMatch })
+    const { searchParams } = new URL(request.url)
+    const matchId = searchParams.get('id')
+
+    if (!matchId) {
+      return NextResponse.json({ error: 'Match ID is required' }, { status: 400 })
+    }
+
+    // Transaction to ensure both operations succeed or fail together
+    await prisma.$transaction([
+      // First, delete all predictions for this match
+      prisma.prediction.deleteMany({
+        where: { matchId: matchId },
+      }),
+      // Then, delete the match itself
+      prisma.match.delete({
+        where: { id: matchId },
+      })
+    ])
+
+    return NextResponse.json({ success: true, message: 'Match deleted successfully' })
   } catch (error) {
-    console.error('Error updating match:', error)
+    console.error('Error deleting match:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

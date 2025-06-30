@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useSession, signOut } from "next-auth/react"
-import { Trophy, Menu, LogOut } from "lucide-react"
+import { Menu, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 
@@ -19,9 +20,9 @@ export function Header() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <Trophy className="h-8 w-8 text-emerald-600" />
-            <span className="text-xl font-bold text-gray-900">TCBB Fantasy</span>
+          <Link href="/" className="flex items-center space-x-3">
+            <Image src="/tcbb.jpg" alt="TCBB Logo" width={40} height={40} className="rounded-md" />
+            <span className="text-xl font-bold text-gray-900 hidden sm:inline">TCBB Fantasy</span>
           </Link>
 
           {/* Desktop Navigation */}

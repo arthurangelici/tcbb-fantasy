@@ -79,39 +79,30 @@ model Player {
 
   matchesAsPlayer1 Match[] @relation("Player1Matches")
   matchesAsPlayer2 Match[] @relation("Player2Matches")
+  wins             Match[] @relation("WonMatches")
   tournamentBets   TournamentBet[]
 
   @@map("players")
 }
 
 model Match {
-  id          String      @id @default(cuid())
-  player1Id   String
-  player2Id   String
-  category    TournamentCategory
-  round       TournamentRound
-  status      MatchStatus @default(SCHEDULED)
-  scheduledAt DateTime?
-  startedAt   DateTime?
-  finishedAt  DateTime?
-  
-  // Result fields
-  winner          String? // player1 or player2
-  player1Sets     Int     @default(0)
-  player2Sets     Int     @default(0)
-  player1Games    String? // "6-4,6-3" format for games per set
-  player2Games    String?
-  hadTiebreak     Boolean @default(false)
-  totalDuration   Int?    // in minutes
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  player1     Player       @relation("Player1Matches", fields: [player1Id], references: [id])
-  player2     Player       @relation("Player2Matches", fields: [player2Id], references: [id])
-  predictions Prediction[]
-
-  @@map("matches")
+  id            String    @id @default(cuid())
+  player1Id     String
+  player2Id     String
+  player1       Player    @relation("Player1Matches", fields: [player1Id], references: [id])
+  player2       Player    @relation("Player2Matches", fields: [player2Id], references: [id])
+  round         TournamentRound
+  category      TournamentCategory
+  status        MatchStatus @default(SCHEDULED)
+  winnerId      String?
+  predictions   Prediction[]
+  scheduledAt   DateTime? @db.Timestamp(6)
+  finishedAt    DateTime? @db.Timestamp(6)
+  setScores     Json?     @db.Json
+  hadTiebreak   Boolean?  @default(false)
+  totalDuration Int? // in minutes
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model Prediction {

@@ -115,23 +115,41 @@ async function main() {
       
       if (player1 && player2) {
         const isFinished = i < 2 // First 2 quarterfinals per category are finished
+        
+        // Base match data
+        const matchData: any = {
+          player1Id: player1.id,
+          player2Id: player2.id,
+          category: category as 'A' | 'B' | 'C',
+          round: 'QUARTERFINALS',
+          status: isFinished ? 'FINISHED' : 'SCHEDULED',
+          scheduledAt: new Date(Date.now() + i * 24 * 60 * 60 * 1000),
+        }
+
+        // Add result for finished matches
+        if (isFinished) {
+          const p1Wins = Math.random() > 0.5
+          const winnerId = p1Wins ? player1.id : player2.id
+          const twoSets = Math.random() > 0.5
+          const setScores = []
+
+          if (twoSets) { // 2-0 result
+            setScores.push({ p1: p1Wins ? 6 : 4, p2: p1Wins ? 4 : 6 })
+            setScores.push({ p1: p1Wins ? 7 : 5, p2: p1Wins ? 5 : 7, tiebreak: "7-5" })
+          } else { // 2-1 result
+            setScores.push({ p1: p1Wins ? 6 : 3, p2: p1Wins ? 3 : 6 })
+            setScores.push({ p1: !p1Wins ? 6 : 2, p2: !p1Wins ? 2 : 6 })
+            setScores.push({ p1: p1Wins ? 10 : 8, p2: p1Wins ? 8 : 10, tiebreak: "10-8" })
+          }
+          
+          matchData.winnerId = winnerId
+          matchData.setScores = setScores
+          matchData.hadTiebreak = setScores.some(s => s.tiebreak)
+          matchData.totalDuration = Math.floor(Math.random() * 120) + 60
+        }
+
         const match = await prisma.match.create({
-          data: {
-            player1Id: player1.id,
-            player2Id: player2.id,
-            category: category as 'A' | 'B' | 'C',
-            round: 'QUARTERFINALS',
-            status: isFinished ? 'FINISHED' : 'SCHEDULED',
-            scheduledAt: new Date(Date.now() + i * 24 * 60 * 60 * 1000),
-            ...(isFinished && {
-              finishedAt: new Date(Date.now() - (2 - i) * 24 * 60 * 60 * 1000),
-              winner: Math.random() > 0.5 ? 'player1' : 'player2',
-              player1Sets: Math.random() > 0.5 ? 2 : Math.random() > 0.5 ? 1 : 0,
-              player2Sets: Math.random() > 0.5 ? 2 : Math.random() > 0.5 ? 1 : 0,
-              hadTiebreak: Math.random() > 0.7,
-              totalDuration: Math.floor(Math.random() * 120) + 60,
-            }),
-          },
+          data: matchData,
         })
         matches.push(match)
       }

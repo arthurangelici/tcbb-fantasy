@@ -38,15 +38,14 @@ export async function GET(request: NextRequest) {
       }>
     }> = {}
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    matches.forEach((match: any) => {
+    matches.forEach((match) => {
       const cat = match.category
       if (!tournamentData[cat]) {
         tournamentData[cat] = { rounds: [] }
       }
 
       // Map database round enum to display names
-      const roundNames = {
+      const roundNames: Record<string, string> = {
         'FIRST_ROUND': '1ª Rodada',
         'ROUND_OF_16': 'Oitavas de Final', 
         'QUARTERFINALS': 'Quartas de Final',
@@ -54,8 +53,7 @@ export async function GET(request: NextRequest) {
         'FINAL': 'Final'
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const roundName = `${(roundNames as any)[match.round]} - Categoria ${cat}`
+      const roundName = `${roundNames[match.round] || match.round} - Categoria ${cat}`
       
       let round = tournamentData[cat].rounds.find(r => r.name === roundName)
       if (!round) {
@@ -63,13 +61,39 @@ export async function GET(request: NextRequest) {
         tournamentData[cat].rounds.push(round)
       }
 
+      // Calculate sets from setScores
+      let player1Sets = 0;
+      let player2Sets = 0;
+      if (match.status === 'FINISHED' && Array.isArray(match.setScores)) {
+        for (const set of match.setScores as { p1: number, p2: number }[]) {
+          if (set.p1 > set.p2) {
+            player1Sets++;
+          } else if (set.p2 > set.p1) {
+            player2Sets++;
+          }
+        }
+      }
+
+      // Format the detailed score string
+      let scoreString = null;
+      if (match.status === 'FINISHED' && Array.isArray(match.setScores)) {
+        scoreString = (match.setScores as { p1: number, p2: number, tiebreak?: string }[])
+          .map(set => {
+            let setScore = `${set.p1}x${set.p2}`;
+            if (set.tiebreak && set.tiebreak.trim() !== '') {
+              setScore += `(${set.tiebreak})`;
+            }
+            return setScore;
+          })
+          .join(' ');
+      }
+
       const formattedMatch = {
         id: match.id,
         player1: match.player1.name,
         player2: match.player2.name,
-        winner: match.winner === 'player1' ? match.player1.name : 
-                match.winner === 'player2' ? match.player2.name : null,
-        score: match.status === 'FINISHED' ? `${match.player1Sets}-${match.player2Sets}` : null,
+        winner: match.winnerId ? (player1Sets > player2Sets ? match.player1.name : match.player2.name) : null,
+        score: scoreString,
         completed: match.status === 'FINISHED',
         category: cat
       }
@@ -81,22 +105,18 @@ export async function GET(request: NextRequest) {
     const allMatches = matches
     const stats = {
       totalMatches: allMatches.length,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      completedMatches: allMatches.filter((m: any) => m.status === 'FINISHED').length,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      remainingMatches: allMatches.filter((m: any) => m.status !== 'FINISHED').length,
+      completedMatches: allMatches.filter((m) => m.status === 'FINISHED').length,
+      remainingMatches: allMatches.filter((m) => m.status !== 'FINISHED').length,
       activePlayers: await prisma.player.count()
     }
 
     // Category-specific stats
     const categoryStats: Record<string, { total: number; completed: number }> = {}
     for (const cat of ['A', 'B', 'C']) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const categoryMatches = matches.filter((m: any) => m.category === cat)
+      const categoryMatches = matches.filter((m) => m.category === cat)
       categoryStats[cat] = {
         total: categoryMatches.length,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        completed: categoryMatches.filter((m: any) => m.status === 'FINISHED').length
+        completed: categoryMatches.filter((m) => m.status === 'FINISHED').length
       }
     }
 

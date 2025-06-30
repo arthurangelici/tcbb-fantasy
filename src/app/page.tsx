@@ -12,7 +12,7 @@ export default function Home() {
           TCBB Fantasy Tennis
         </h1>
         <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-          Faça seus palpites no torneio interno de tênis e compete com outros fãs pelo título de melhor analista!
+          Faça seus palpites no torneio interno de tênis e concorra com outros fãs pelo título de melhor analista!
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button asChild size="lg" className="text-lg px-8 py-3">
