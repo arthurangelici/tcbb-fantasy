@@ -51,9 +51,12 @@ export async function GET(request: NextRequest) {
         
         // Add to category-specific stats
         if (matchCategory === 'A' || matchCategory === 'B' || matchCategory === 'C') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (pointsByCategory as any)[matchCategory] += points;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (predictionsByCategory as any)[matchCategory].total++
           if (points > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (predictionsByCategory as any)[matchCategory].correct++
           }
         }
@@ -66,6 +69,7 @@ export async function GET(request: NextRequest) {
         pointsByCategory.general += points;
 
         if (bet.category && (bet.category === 'A' || bet.category === 'B' || bet.category === 'C')) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (pointsByCategory as any)[bet.category] += points;
         }
       })
