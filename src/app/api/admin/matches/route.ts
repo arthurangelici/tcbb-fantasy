@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { Match, Player } from '@prisma/client'
 
 // Type for the session with user data
 type SessionWithUser = {
@@ -17,9 +16,29 @@ type SessionWithUser = {
 }
 
 // Define a type for the match with included players
-type MatchWithPlayers = Match & {
-  player1: Player;
-  player2: Player;
+type MatchWithPlayers = {
+  id: string;
+  player1Id: string;
+  player2Id: string;
+  player1: {
+    id: string;
+    name: string;
+    ranking: number;
+  };
+  player2: {
+    id: string;
+    name: string;
+    ranking: number;
+  };
+  round: string;
+  category: string;
+  status: string;
+  winnerId?: string | null;
+  scheduledAt?: Date | null;
+  finishedAt?: Date | null;
+  setScores?: unknown;
+  hadTiebreak?: boolean | null;
+  totalDuration?: number | null;
 };
 
 // Helper function to format a match object
@@ -240,7 +259,8 @@ export async function PUT(request: NextRequest) {
     }
 
     // Use a transaction to ensure atomicity
-    const updatedMatch = await prisma.$transaction(async (tx) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updatedMatch = await prisma?.$transaction(async (tx: any) => {
       const match = await tx.match.findUnique({
         where: { id: matchId },
         include: { player1: true, player2: true }
