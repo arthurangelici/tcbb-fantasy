@@ -114,21 +114,15 @@ export async function POST(request: NextRequest) {
       },
       update: {
         winner: prediction.winner,
-        exactScore: prediction.exactScore,
-        goesToThirdSet: prediction.goesToThirdSet,
+        setScores: prediction.setScores,
         firstSetWinner: prediction.firstSetWinner,
-        willHaveTiebreak: prediction.willHaveTiebreak,
-        marginOfVictory: prediction.marginOfVictory
       },
       create: {
         userId,
         matchId,
         winner: prediction.winner,
-        exactScore: prediction.exactScore,
-        goesToThirdSet: prediction.goesToThirdSet,
+        setScores: prediction.setScores,
         firstSetWinner: prediction.firstSetWinner,
-        willHaveTiebreak: prediction.willHaveTiebreak,
-        marginOfVictory: prediction.marginOfVictory
       }
     })
 

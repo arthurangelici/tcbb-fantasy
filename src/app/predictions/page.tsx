@@ -5,6 +5,8 @@ import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Trophy, Target, Clock, TrendingUp, Star } from "lucide-react"
 
@@ -34,20 +36,28 @@ interface TournamentBet {
 
 interface Prediction {
   winner?: string
-  exactScore?: string
-  goesToThirdSet?: boolean
+  setScores?: { p1: number; p2: number; tiebreak?: string }[]
   firstSetWinner?: string
-  willHaveTiebreak?: boolean
-  marginOfVictory?: 'CLOSE' | 'COMFORTABLE'
 }
 
 function MatchPredictionCard({ match }: { match: Match }) {
   const { data: session } = useSession()
-  const [prediction, setPrediction] = useState<Prediction>({})
+  const [prediction, setPrediction] = useState<Prediction>({
+    setScores: [{ p1: 0, p2: 0, tiebreak: '' }, { p1: 0, p2: 0, tiebreak: '' }]
+  })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async () => {
     if (!session?.user || !prediction.winner) return
+    
+    // Validate set scores - at least 2 sets must be provided
+    if (!prediction.setScores || prediction.setScores.length < 2) return
+    
+    // Check that all sets have valid scores
+    const hasValidScores = prediction.setScores.every(set => 
+      set.p1 >= 0 && set.p2 >= 0 && (set.p1 > 0 || set.p2 > 0)
+    )
+    if (!hasValidScores) return
 
     setIsSubmitting(true)
     try {
@@ -96,7 +106,7 @@ function MatchPredictionCard({ match }: { match: Match }) {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-6">
           {/* Winner */}
           <div>
             <label className="text-sm font-medium mb-2 block">
@@ -126,45 +136,90 @@ function MatchPredictionCard({ match }: { match: Match }) {
             </div>
           </div>
 
-          {/* Exact Score */}
+          {/* Detailed Set Scores */}
           <div>
             <label className="text-sm font-medium mb-2 block">
-              Placar exato (15 pontos)
+              Placar detalhado dos sets (15 pontos)
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={prediction.exactScore === '2-0' ? 'default' : 'outline'}
-                onClick={() => setPrediction(prev => ({ ...prev, exactScore: '2-0' }))}
-              >
-                2-0
-              </Button>
-              <Button
-                variant={prediction.exactScore === '2-1' ? 'default' : 'outline'}
-                onClick={() => setPrediction(prev => ({ ...prev, exactScore: '2-1' }))}
-              >
-                2-1
-              </Button>
-            </div>
-          </div>
-
-          {/* Goes to Third Set */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">
-              Vai ao 3º set? (8 pontos)
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={prediction.goesToThirdSet === true ? 'default' : 'outline'}
-                onClick={() => setPrediction(prev => ({ ...prev, goesToThirdSet: true }))}
-              >
-                Sim
-              </Button>
-              <Button
-                variant={prediction.goesToThirdSet === false ? 'default' : 'outline'}
-                onClick={() => setPrediction(prev => ({ ...prev, goesToThirdSet: false }))}
-              >
-                Não
-              </Button>
+            <div className="space-y-4">
+              {prediction.setScores?.map((set, index) => (
+                <div key={index} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <Label className="font-medium">{index + 1}º Set</Label>
+                    {index >= 2 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const newSets = [...(prediction.setScores || [])];
+                          newSets.splice(index, 1);
+                          setPrediction(prev => ({ ...prev, setScores: newSets }));
+                        }}
+                      >
+                        Remover
+                      </Button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-5 gap-2 items-center">
+                    <div className="text-sm font-medium text-center">{match.player1.name}</div>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="15"
+                      placeholder="0"
+                      value={set.p1 || ''}
+                      onChange={(e) => {
+                        const newSets = [...(prediction.setScores || [])];
+                        newSets[index].p1 = parseInt(e.target.value) || 0;
+                        setPrediction(prev => ({ ...prev, setScores: newSets }));
+                      }}
+                    />
+                    <div className="text-center font-bold">X</div>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="15"
+                      placeholder="0"
+                      value={set.p2 || ''}
+                      onChange={(e) => {
+                        const newSets = [...(prediction.setScores || [])];
+                        newSets[index].p2 = parseInt(e.target.value) || 0;
+                        setPrediction(prev => ({ ...prev, setScores: newSets }));
+                      }}
+                    />
+                    <div className="text-sm font-medium text-center">{match.player2.name}</div>
+                  </div>
+                  {/* Tiebreak score for current set */}
+                  <div className="mt-3">
+                    <Label className="text-sm">Tiebreak (ex: 7-5)</Label>
+                    <Input
+                      type="text"
+                      placeholder="Deixe vazio se não houver tiebreak"
+                      value={set.tiebreak || ''}
+                      onChange={(e) => {
+                        const newSets = [...(prediction.setScores || [])];
+                        newSets[index].tiebreak = e.target.value;
+                        setPrediction(prev => ({ ...prev, setScores: newSets }));
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+              
+              {prediction.setScores && prediction.setScores.length < 3 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const newSets = [...(prediction.setScores || [])];
+                    newSets.push({ p1: 0, p2: 0, tiebreak: '' });
+                    setPrediction(prev => ({ ...prev, setScores: newSets }));
+                  }}
+                  className="w-full"
+                >
+                  Adicionar 3º Set
+                </Button>
+              )}
             </div>
           </div>
 
@@ -188,54 +243,18 @@ function MatchPredictionCard({ match }: { match: Match }) {
               </Button>
             </div>
           </div>
-
-          {/* Tiebreak */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">
-              Terá tie-break? (5 pontos)
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={prediction.willHaveTiebreak === true ? 'default' : 'outline'}
-                onClick={() => setPrediction(prev => ({ ...prev, willHaveTiebreak: true }))}
-              >
-                Sim
-              </Button>
-              <Button
-                variant={prediction.willHaveTiebreak === false ? 'default' : 'outline'}
-                onClick={() => setPrediction(prev => ({ ...prev, willHaveTiebreak: false }))}
-              >
-                Não
-              </Button>
-            </div>
-          </div>
-
-          {/* Margin of Victory */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">
-              Margem de vitória (7 pontos)
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={prediction.marginOfVictory === 'CLOSE' ? 'default' : 'outline'}
-                onClick={() => setPrediction(prev => ({ ...prev, marginOfVictory: 'CLOSE' }))}
-              >
-                Apertado
-              </Button>
-              <Button
-                variant={prediction.marginOfVictory === 'COMFORTABLE' ? 'default' : 'outline'}
-                onClick={() => setPrediction(prev => ({ ...prev, marginOfVictory: 'COMFORTABLE' }))}
-              >
-                Tranquilo
-              </Button>
-            </div>
-          </div>
         </div>
 
         {/* Submit */}
         <Button 
           onClick={handleSubmit}
-          disabled={isSubmitting || !prediction.winner}
+          disabled={
+            isSubmitting || 
+            !prediction.winner || 
+            !prediction.setScores || 
+            prediction.setScores.length < 2 ||
+            !prediction.setScores.every(set => set.p1 >= 0 && set.p2 >= 0 && (set.p1 > 0 || set.p2 > 0))
+          }
           className="w-full"
         >
           {isSubmitting ? 'Salvando...' : 'Salvar Palpites'}
