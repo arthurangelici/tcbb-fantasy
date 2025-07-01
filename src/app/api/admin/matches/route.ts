@@ -374,15 +374,26 @@ export async function PUT(request: NextRequest) {
               where: { id: prediction.id },
               data: { pointsEarned: points }
             });
+          }
 
+          // After updating all predictions, recalculate total points for all affected users
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const affectedUserIds = new Set(predictions.map((p: any) => p.userId));
+          const affectedUsers = Array.from(affectedUserIds);
+          
+          for (const userId of affectedUsers) {
+            // Calculate total points from all predictions
+            const userPredictions = await tx.prediction.findMany({
+              where: { userId }
+            });
+            
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const totalPoints = userPredictions.reduce((sum: number, pred: any) => sum + pred.pointsEarned, 0);
+            
             // Update user's total points
             await tx.user.update({
-              where: { id: prediction.userId },
-              data: {
-                points: {
-                  increment: points - prediction.pointsEarned // Only add the difference
-                }
-              }
+              where: { id: userId },
+              data: { points: totalPoints }
             });
           }
         }
