@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rankingData = users.map((user: any) => {
       const pointsByCategory = {
-        general: user.points || 0, // Use the correctly maintained user.points field
+        general: 0, // Calculate general points by summing predictions and bets
         A: 0,
         B: 0,
         C: 0
@@ -40,13 +40,14 @@ export async function GET(request: NextRequest) {
         C: { correct: 0, total: 0 }
       }
 
-      // Calculate predictions stats and category-specific points
+      // Calculate points and predictions by category
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       user.predictions.forEach((prediction: any) => {
         const matchCategory = prediction.match.category
         const points = prediction.pointsEarned || 0; // Ensure points is a number
 
-        // Add to general prediction stats
+        // Add to general stats
+        pointsByCategory.general += points;
         predictionsByCategory.general.total++
         if (points > 0) {
           predictionsByCategory.general.correct++
@@ -69,8 +70,8 @@ export async function GET(request: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       user.tournamentBets.forEach((bet: any) => {
         const points = bet.pointsEarned || 0; // Ensure points is a number
-        // General points are already included in user.points, so no need to add here for general
-        
+        pointsByCategory.general += points;
+
         if (bet.category && (bet.category === 'A' || bet.category === 'B' || bet.category === 'C')) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (pointsByCategory as any)[bet.category] += points;
