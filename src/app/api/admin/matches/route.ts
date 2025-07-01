@@ -304,6 +304,11 @@ export async function PUT(request: NextRequest) {
           throw new Error('setScores must be a non-empty array');
         }
 
+        // Validate winner is provided and correct
+        if (!winner || (winner !== 'PLAYER1' && winner !== 'PLAYER2')) {
+          throw new Error('Winner must be either PLAYER1 or PLAYER2');
+        }
+
         let hasTiebreak = false;
         for (const set of setScores) {
           if (typeof set.p1 !== 'number' || typeof set.p2 !== 'number') {
@@ -317,7 +322,7 @@ export async function PUT(request: NextRequest) {
         updateData.status = 'FINISHED';
         updateData.setScores = setScores;
         updateData.hadTiebreak = hasTiebreak;
-        updateData.winnerId = winner === 'PLAYER1' ? match.player1Id : (winner === 'PLAYER2' ? match.player2Id : null);
+        updateData.winnerId = winner === 'PLAYER1' ? match.player1Id : match.player2Id;
         updateData.finishedAt = new Date();
 
         if (totalDuration !== undefined) {
@@ -352,7 +357,7 @@ export async function PUT(request: NextRequest) {
 
           // Create match object for scoring calculation
           const matchForScoring = {
-            winner: winner === 'PLAYER1' ? 'player1' : (winner === 'PLAYER2' ? 'player2' : null),
+            winner: winner === 'PLAYER1' ? 'player1' : 'player2',  // Now guaranteed to be valid
             setScores: setScores,
             player1Sets,
             player2Sets,
@@ -361,14 +366,27 @@ export async function PUT(request: NextRequest) {
 
           // Update points for each prediction
           for (const prediction of predictions) {
+            const predictionData = {
+              winner: prediction.winner,
+              setScores: prediction.setScores as { p1: number; p2: number; tiebreak?: string }[] | null,
+              firstSetWinner: prediction.firstSetWinner
+            };
+
             const points = calculatePredictionPoints(
-              {
-                winner: prediction.winner,
-                setScores: prediction.setScores as { p1: number; p2: number; tiebreak?: string }[] | null,
-                firstSetWinner: prediction.firstSetWinner
-              },
+              predictionData,
               matchForScoring
             );
+
+            // Log for debugging points calculation
+            console.log('Points calculation:', {
+              matchId: matchId,
+              userId: prediction.userId,
+              predictionWinner: predictionData.winner,
+              matchWinner: matchForScoring.winner,
+              calculatedPoints: points,
+              predictionSetScores: predictionData.setScores,
+              matchSetScores: matchForScoring.setScores
+            });
 
             await tx.prediction.update({
               where: { id: prediction.id },
