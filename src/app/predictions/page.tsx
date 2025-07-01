@@ -19,6 +19,11 @@ interface Match {
   round: string
   canPredict: boolean
   category: string
+  existingPrediction?: {
+    winner?: string | null
+    setScores?: { p1: number; p2: number }[] | null
+    firstSetWinner?: string | null
+  }
 }
 
 interface Category {
@@ -46,6 +51,17 @@ function MatchPredictionCard({ match }: { match: Match }) {
     setScores: [{ p1: 0, p2: 0, tiebreak: '' }]
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Load existing prediction when component mounts or match changes
+  useEffect(() => {
+    if (match.existingPrediction) {
+      setPrediction({
+        winner: match.existingPrediction.winner || undefined,
+        setScores: match.existingPrediction.setScores || [{ p1: 0, p2: 0, tiebreak: '' }],
+        firstSetWinner: match.existingPrediction.firstSetWinner || undefined
+      })
+    }
+  }, [match])
 
   const handleSubmit = async () => {
     if (!session?.user || !prediction.winner) return

@@ -1,10 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+
+// Type for the session with user data
+type SessionWithUser = {
+  user: {
+    id: string
+    email: string
+    name?: string | null
+    image?: string | null
+    role: string
+  }
+  expires: string
+}
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
+    
+    // Get user session for predictions
+    const session = await getServerSession(authOptions) as SessionWithUser | null
+    let user = null
+    
+    if (session?.user?.email) {
+      user = await prisma.user.findUnique({
+        where: { email: session.user.email }
+      })
+    }
     
     // Get matches that can be predicted (scheduled matches)
     const matches = await prisma.match.findMany({
@@ -16,7 +40,10 @@ export async function GET(request: NextRequest) {
       },
       include: {
         player1: true,
-        player2: true
+        player2: true,
+        predictions: user ? {
+          where: { userId: user.id }
+        } : false
       },
       orderBy: [
         { category: 'asc' },
@@ -34,6 +61,11 @@ export async function GET(request: NextRequest) {
       round: string
       canPredict: boolean
       category: string
+      existingPrediction?: {
+        winner?: string | null
+        setScores?: { p1: number; p2: number }[] | null
+        firstSetWinner?: string | null
+      }
     }>> = {}
     
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -66,7 +98,15 @@ export async function GET(request: NextRequest) {
         status: match.status.toLowerCase(),
         round: roundNames[match.round] || match.round,
         canPredict: true,
-        category: cat
+        category: cat,
+        // Include existing prediction if user is logged in and has made a prediction
+        ...(match.predictions && match.predictions.length > 0 && {
+          existingPrediction: {
+            winner: match.predictions[0].winner,
+            setScores: match.predictions[0].setScores,
+            firstSetWinner: match.predictions[0].firstSetWinner
+          }
+        })
       }
 
       matchesByCategory[cat].push(formattedMatch)
