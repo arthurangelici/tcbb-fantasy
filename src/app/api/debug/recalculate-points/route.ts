@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { calculatePredictionPoints } from '@/lib/utils'
+import { Prisma } from '@prisma/client'
 
 // Type for the session with user data
 type SessionWithUser = {
@@ -53,7 +54,7 @@ export async function POST() {
     let totalPointsAwarded = 0;
 
     // Use transaction to ensure consistency
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       for (const match of finishedMatches) {
         console.log(`Processing match: ${match.player1.name} vs ${match.player2.name}`);
 
@@ -70,7 +71,7 @@ export async function POST() {
         let player1Sets = 0;
         let player2Sets = 0;
         if (match.setScores && Array.isArray(match.setScores)) {
-          for (const set of match.setScores as any[]) {
+          for (const set of match.setScores as { p1: number; p2: number; tiebreak?: string }[]) {
             if (set.p1 > set.p2) {
               player1Sets++;
             } else if (set.p2 > set.p1) {
@@ -117,7 +118,7 @@ export async function POST() {
           where: { userId: userRecord.id }
         });
 
-        const totalPoints = userPredictions.reduce((sum, pred) => sum + pred.pointsEarned, 0);
+        const totalPoints = userPredictions.reduce((sum: number, pred: { pointsEarned: number }) => sum + pred.pointsEarned, 0);
 
         await tx.user.update({
           where: { id: userRecord.id },
