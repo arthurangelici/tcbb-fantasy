@@ -17,22 +17,7 @@ type SessionWithUser = {
   expires: string
 }
 
-// Type for prediction with match data
-type PredictionWithMatch = {
-  id: string
-  pointsEarned: number
-  winner: string | null
-  setScores: { p1: number; p2: number }[] | null
-  match: {
-    id: string
-    category: string
-    finishedAt: Date | null
-    scheduledAt: Date | null
-    player1: { name: string }
-    player2: { name: string }
-    winner: { name: string } | null
-  }
-}
+// We'll use Prisma's inferred types instead of defining custom types
 
 export async function GET() {
   try {
@@ -76,7 +61,7 @@ export async function GET() {
     })
 
     // Format the data for the frontend
-    const formattedHistory = predictions.map((prediction: PredictionWithMatch) => {
+    const formattedHistory = predictions.map((prediction: any) => {
       const match = prediction.match
       
       // Determine the predicted winner name
@@ -99,7 +84,8 @@ export async function GET() {
       
       if (prediction.setScores && Array.isArray(prediction.setScores) && prediction.setScores.length > 0) {
         // Format set scores for display
-        const formattedScores = prediction.setScores.map(set => `${set.p1}-${set.p2}`).join(', ')
+        const setScoreArray = prediction.setScores as { p1: number; p2: number }[]
+        const formattedScores = setScoreArray.map(set => `${set.p1}-${set.p2}`).join(', ')
         predictionDetails = formattedScores
         predictionType = 'Exact Score'
       }
