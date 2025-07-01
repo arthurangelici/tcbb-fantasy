@@ -43,15 +43,15 @@ interface Prediction {
 function MatchPredictionCard({ match }: { match: Match }) {
   const { data: session } = useSession()
   const [prediction, setPrediction] = useState<Prediction>({
-    setScores: [{ p1: 0, p2: 0, tiebreak: '' }, { p1: 0, p2: 0, tiebreak: '' }]
+    setScores: [{ p1: 0, p2: 0, tiebreak: '' }]
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async () => {
     if (!session?.user || !prediction.winner) return
     
-    // Validate set scores - at least 2 sets must be provided
-    if (!prediction.setScores || prediction.setScores.length < 2) return
+    // Validate set scores - at least 1 set must be provided
+    if (!prediction.setScores || prediction.setScores.length < 1) return
     
     // Check that all sets have valid scores
     const hasValidScores = prediction.setScores.every(set => 
@@ -146,7 +146,7 @@ function MatchPredictionCard({ match }: { match: Match }) {
                 <div key={index} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <Label className="font-medium">{index + 1}º Set</Label>
-                    {index >= 2 && (
+                    {index >= 1 && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -217,7 +217,7 @@ function MatchPredictionCard({ match }: { match: Match }) {
                   }}
                   className="w-full"
                 >
-                  Adicionar 3º Set
+                  {prediction.setScores.length === 1 ? 'Adicionar 2º Set' : 'Adicionar 3º Set'}
                 </Button>
               )}
             </div>
@@ -252,7 +252,7 @@ function MatchPredictionCard({ match }: { match: Match }) {
             isSubmitting || 
             !prediction.winner || 
             !prediction.setScores || 
-            prediction.setScores.length < 2 ||
+            prediction.setScores.length < 1 ||
             !prediction.setScores.every(set => set.p1 >= 0 && set.p2 >= 0 && (set.p1 > 0 || set.p2 > 0))
           }
           className="w-full"

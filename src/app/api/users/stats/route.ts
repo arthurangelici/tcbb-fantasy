@@ -96,11 +96,30 @@ export async function GET() {
       const prediction = match.predictions[0]
       const predictedWinner = prediction?.winner === 'player1' ? match.player1.name : match.player2.name
       
+      // Parse setScores to get the match result
+      let result = 'N/A'
+      if (match.setScores && Array.isArray(match.setScores)) {
+        let player1Sets = 0
+        let player2Sets = 0
+        
+        // Count sets won by each player
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        match.setScores.forEach((set: any) => {
+          if (set.p1 > set.p2) {
+            player1Sets++
+          } else if (set.p2 > set.p1) {
+            player2Sets++
+          }
+        })
+        
+        result = `${player1Sets}-${player2Sets}`
+      }
+      
       return {
         id: match.id,
         player1: match.player1.name,
         player2: match.player2.name,
-        result: `${match.player1Sets}-${match.player2Sets}`,
+        result,
         userPrediction: predictedWinner || 'Sem palpite',
         points: prediction?.pointsEarned || 0,
         correct: prediction?.pointsEarned > 0

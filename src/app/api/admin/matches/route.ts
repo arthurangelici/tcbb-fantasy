@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { calculatePredictionPoints } from '@/lib/utils'
 
 // Type for the session with user data
 type SessionWithUser = {
@@ -331,9 +332,63 @@ export async function PUT(request: NextRequest) {
           where: { id: matchId },
           data: updateData
         });
+
+        // 4. Calculate and update prediction points for all users who made predictions on this match
+        if (setScores) {
+          const predictions = await tx.prediction.findMany({
+            where: { matchId: matchId }
+          });
+
+          // Calculate sets won by each player
+          let player1Sets = 0;
+          let player2Sets = 0;
+          for (const set of setScores) {
+            if (set.p1 > set.p2) {
+              player1Sets++;
+            } else if (set.p2 > set.p1) {
+              player2Sets++;
+            }
+          }
+
+          // Create match object for scoring calculation
+          const matchForScoring = {
+            winner: winner === 'PLAYER1' ? 'player1' : (winner === 'PLAYER2' ? 'player2' : null),
+            setScores: setScores,
+            player1Sets,
+            player2Sets,
+            hadTiebreak: updateData.hadTiebreak || false
+          };
+
+          // Update points for each prediction
+          for (const prediction of predictions) {
+            const points = calculatePredictionPoints(
+              {
+                winner: prediction.winner,
+                setScores: prediction.setScores as { p1: number; p2: number; tiebreak?: string }[] | null,
+                firstSetWinner: prediction.firstSetWinner
+              },
+              matchForScoring
+            );
+
+            await tx.prediction.update({
+              where: { id: prediction.id },
+              data: { pointsEarned: points }
+            });
+
+            // Update user's total points
+            await tx.user.update({
+              where: { id: prediction.userId },
+              data: {
+                points: {
+                  increment: points - prediction.pointsEarned // Only add the difference
+                }
+              }
+            });
+          }
+        }
       }
 
-      // 4. Return the fully updated match data with players
+      // 5. Return the fully updated match data with players
       return tx.match.findUnique({
         where: { id: matchId },
         include: { player1: true, player2: true }
