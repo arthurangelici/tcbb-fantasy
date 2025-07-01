@@ -58,12 +58,16 @@ export async function GET() {
     return NextResponse.json({
       summary: {
         totalUsers: allUsers.length,
-        usersWithPredictions: allUsers.filter(u => u.predictions.length > 0).length,
-        usersWithPoints: allUsers.filter(u => u.points > 0).length,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        usersWithPredictions: allUsers.filter((u: any) => u.predictions.length > 0).length,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        usersWithPoints: allUsers.filter((u: any) => u.points > 0).length,
         totalFinishedPredictions: allFinishedPredictions.length,
-        finishedPredictionsWithPoints: allFinishedPredictions.filter(p => p.pointsEarned > 0).length
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        finishedPredictionsWithPoints: allFinishedPredictions.filter((p: any) => p.pointsEarned > 0).length
       },
-      users: allUsers.map(user => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      users: allUsers.map((user: any) => ({
         email: user.email,
         name: user.name,
         storedPoints: user.points,
@@ -71,7 +75,8 @@ export async function GET() {
         predictionsWithPoints: user.predictions.filter((p: { pointsEarned: number }) => p.pointsEarned > 0).length,
         totalPredictionPoints: user.predictions.reduce((sum: number, p: { pointsEarned?: number }) => sum + (p.pointsEarned || 0), 0)
       })),
-      finishedPredictions: allFinishedPredictions.map(p => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      finishedPredictions: allFinishedPredictions.map((p: any) => ({
         userEmail: p.user.email,
         userName: p.user.name,
         matchId: p.matchId,

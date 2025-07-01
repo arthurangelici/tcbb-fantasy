@@ -78,7 +78,7 @@ function MatchCard({ match }: { match: Match }) {
 }
 
 export default function TournamentPage() {
-  const [selectedCategory, setSelectedCategory] = useState<'A' | 'B' | 'C' | 'ALL'>('ALL')
+  const [selectedCategory, setSelectedCategory] = useState<'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB' | 'ALL'>('ALL')
   const [selectedRound, setSelectedRound] = useState<string | null>(null)
   const [tournamentData, setTournamentData] = useState<TournamentData>({})
   const [stats, setStats] = useState<TournamentStats | null>(null)
@@ -214,16 +214,17 @@ export default function TournamentPage() {
           >
             Todas as Categorias
           </Button>
-          {['A', 'B', 'C'].map((category) => {
+          {['A', 'B', 'C', 'ATP', 'RANKING_TCBB'].map((category) => {
             const catStats = categoryStats[category] || { total: 0, completed: 0 }
+            const displayName = category === 'ATP' ? 'ATP' : category === 'RANKING_TCBB' ? 'Ranking TCBB' : `Categoria ${category}`
             return (
               <Button
                 key={category}
                 variant={selectedCategory === category ? "default" : "outline"}
-                onClick={() => setSelectedCategory(category as 'A' | 'B' | 'C')}
+                onClick={() => setSelectedCategory(category as 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB')}
                 className="relative"
               >
-                Categoria {category}
+                {displayName}
                 <span className="ml-2 text-xs bg-white bg-opacity-20 px-1 rounded">
                   {catStats.completed}/{catStats.total}
                 </span>
@@ -298,13 +299,14 @@ export default function TournamentPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {['A', 'B', 'C'].map((category) => {
+                {['A', 'B', 'C', 'ATP', 'RANKING_TCBB'].map((category) => {
                   const catStats = categoryStats[category] || { total: 0, completed: 0 }
                   const progressPercentage = catStats.total > 0 ? (catStats.completed / catStats.total) * 100 : 0
+                  const displayName = category === 'ATP' ? 'ATP' : category === 'RANKING_TCBB' ? 'Ranking TCBB' : `Categoria ${category}`
 
                   return (
                     <div key={category} className="flex items-center space-x-4">
-                      <div className="w-32 text-sm font-medium">Categoria {category}</div>
+                      <div className="w-32 text-sm font-medium">{displayName}</div>
                       <div className="flex-1 bg-gray-200 rounded-full h-2">
                         <div 
                           className="bg-emerald-600 h-2 rounded-full transition-all duration-300"

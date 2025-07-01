@@ -48,14 +48,18 @@ export async function GET(request: NextRequest) {
         general: calculatedTotalPoints,
         A: 0,
         B: 0,
-        C: 0
+        C: 0,
+        ATP: 0,
+        RANKING_TCBB: 0
       }
 
       const predictionsByCategory = {
         general: { correct: 0, total: 0 },
         A: { correct: 0, total: 0 },
         B: { correct: 0, total: 0 },
-        C: { correct: 0, total: 0 }
+        C: { correct: 0, total: 0 },
+        ATP: { correct: 0, total: 0 },
+        RANKING_TCBB: { correct: 0, total: 0 }
       }
 
       // Calculate predictions statistics and category-specific points
@@ -70,7 +74,7 @@ export async function GET(request: NextRequest) {
         }
         
         // Add to category-specific stats and points
-        if (matchCategory === 'A' || matchCategory === 'B' || matchCategory === 'C') {
+        if (matchCategory === 'A' || matchCategory === 'B' || matchCategory === 'C' || matchCategory === 'ATP' || matchCategory === 'RANKING_TCBB') {
           (pointsByCategory as Record<string, number>)[matchCategory] += points;
           (predictionsByCategory as Record<string, { correct: number; total: number }>)[matchCategory].total++
           if (points > 0) {
@@ -83,7 +87,7 @@ export async function GET(request: NextRequest) {
       user.tournamentBets.forEach((bet) => {
         const points = bet.pointsEarned || 0; // Ensure points is a number
 
-        if (bet.category && (bet.category === 'A' || bet.category === 'B' || bet.category === 'C')) {
+        if (bet.category && (bet.category === 'A' || bet.category === 'B' || bet.category === 'C' || bet.category === 'ATP' || bet.category === 'RANKING_TCBB')) {
           (pointsByCategory as Record<string, number>)[bet.category] += points;
         }
       })
@@ -125,8 +129,8 @@ export async function GET(request: NextRequest) {
     };
     
     const sortedRanking = rankingData.sort((a: RankingItem, b: RankingItem) => {
-      const pointsA = category === 'general' ? a.pointsByCategory.general : a.pointsByCategory[category as 'A' | 'B' | 'C'] || 0
-      const pointsB = category === 'general' ? b.pointsByCategory.general : b.pointsByCategory[category as 'A' | 'B' | 'C'] || 0
+      const pointsA = category === 'general' ? a.pointsByCategory.general : a.pointsByCategory[category as 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB'] || 0
+      const pointsB = category === 'general' ? b.pointsByCategory.general : b.pointsByCategory[category as 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB'] || 0
       return pointsB - pointsA
     })
 
@@ -140,7 +144,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate stats
     const totalPlayers = finalRanking.length
-    const categoryKey = category === 'general' ? 'general' : category as 'A' | 'B' | 'C'
+    const categoryKey = category === 'general' ? 'general' : category as 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB'
     const averagePoints = totalPlayers > 0 ? Math.round(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       finalRanking.reduce((acc: number, p: any) => acc + (p.pointsByCategory[categoryKey] || 0), 0) / totalPlayers

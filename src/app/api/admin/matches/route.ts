@@ -49,7 +49,17 @@ function formatMatch(match: MatchWithPlayers) {
     'ROUND_OF_16': 'Oitavas de Final', 
     'QUARTERFINALS': 'Quartas de Final',
     'SEMIFINALS': 'Semifinais',
-    'FINAL': 'Final'
+    'FINAL': 'Final',
+    // Ranking TCBB rounds
+    'ROUND_1': 'Rodada 1',
+    'ROUND_2': 'Rodada 2',
+    'ROUND_3': 'Rodada 3',
+    'ROUND_4': 'Rodada 4',
+    'ROUND_5': 'Rodada 5',
+    'ROUND_6': 'Rodada 6',
+    'ROUND_7': 'Rodada 7',
+    'ROUND_8': 'Rodada 8',
+    'ROUND_9': 'Rodada 9'
   }
 
   let player1Sets = 0;
@@ -157,7 +167,7 @@ export async function POST(request: NextRequest) {
     let player1 = await prisma.player.findFirst({
       where: { 
         name: player1Name,
-        category: category as 'A' | 'B' | 'C'
+        category: category as 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB'
       }
     })
 
@@ -173,7 +183,7 @@ export async function POST(request: NextRequest) {
           name: player1Name,
           ranking: nextRanking,
           nationality: 'Brasil',
-          category: category as 'A' | 'B' | 'C',
+          category: category as 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB',
           age: 25 // Default age
         }
       })
@@ -182,7 +192,7 @@ export async function POST(request: NextRequest) {
     let player2 = await prisma.player.findFirst({
       where: { 
         name: player2Name,
-        category: category as 'A' | 'B' | 'C'
+        category: category as 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB'
       }
     })
 
@@ -197,7 +207,7 @@ export async function POST(request: NextRequest) {
           name: player2Name,
           ranking: nextRanking,
           nationality: 'Brasil',
-          category: category as 'A' | 'B' | 'C',
+          category: category as 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB',
           age: 25 // Default age
         }
       })
@@ -208,8 +218,8 @@ export async function POST(request: NextRequest) {
       data: {
         player1Id: player1.id,
         player2Id: player2.id,
-        category: category as 'A' | 'B' | 'C',
-        round: round as 'FIRST_ROUND' | 'ROUND_OF_16' | 'QUARTERFINALS' | 'SEMIFINALS' | 'FINAL',
+        category: category as 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB',
+        round: round as 'FIRST_ROUND' | 'ROUND_OF_16' | 'QUARTERFINALS' | 'SEMIFINALS' | 'FINAL' | 'ROUND_1' | 'ROUND_2' | 'ROUND_3' | 'ROUND_4' | 'ROUND_5' | 'ROUND_6' | 'ROUND_7' | 'ROUND_8' | 'ROUND_9',
         status: 'SCHEDULED',
         scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date()
       },
