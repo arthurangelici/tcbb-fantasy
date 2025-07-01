@@ -5,6 +5,8 @@ import { prisma } from '@/lib/db'
 import { calculatePredictionPoints } from '@/lib/utils'
 import { Prisma } from '@prisma/client'
 
+export const dynamic = 'force-dynamic'
+
 // Type for the session with user data
 type SessionWithUser = {
   user: {

@@ -114,8 +114,8 @@ export async function GET() {
         points_earned: p.pointsEarned,
         match_status: p.match.status
       })),
-      tournament_bets_detail: user.tournamentBets.map((b: { category: string; pointsEarned: number }) => ({
-        category: b.category,
+      tournament_bets_detail: user.tournamentBets.map((b: { category: string | null; pointsEarned: number }) => ({
+        category: b.category || 'N/A',
         points_earned: b.pointsEarned
       })),
       timestamp: new Date().toISOString()

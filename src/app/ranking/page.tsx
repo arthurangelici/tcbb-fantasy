@@ -103,9 +103,6 @@ function PlayerRankingCard({
                     Você
                   </Badge>
                 )}
-                <Badge variant="outline" className="text-xs">
-                  Cat. {player.category}
-                </Badge>
               </div>
               <p className="text-sm text-gray-600">{player.email}</p>
               <div className="flex items-center space-x-4 mt-2">
