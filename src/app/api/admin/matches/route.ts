@@ -304,6 +304,11 @@ export async function PUT(request: NextRequest) {
           throw new Error('setScores must be a non-empty array');
         }
 
+        // Validate winner is provided and correct
+        if (!winner || (winner !== 'PLAYER1' && winner !== 'PLAYER2')) {
+          throw new Error('Winner must be either PLAYER1 or PLAYER2');
+        }
+
         let hasTiebreak = false;
         for (const set of setScores) {
           if (typeof set.p1 !== 'number' || typeof set.p2 !== 'number') {
@@ -317,7 +322,7 @@ export async function PUT(request: NextRequest) {
         updateData.status = 'FINISHED';
         updateData.setScores = setScores;
         updateData.hadTiebreak = hasTiebreak;
-        updateData.winnerId = winner === 'PLAYER1' ? match.player1Id : (winner === 'PLAYER2' ? match.player2Id : null);
+        updateData.winnerId = winner === 'PLAYER1' ? match.player1Id : match.player2Id;
         updateData.finishedAt = new Date();
 
         if (totalDuration !== undefined) {
@@ -352,7 +357,7 @@ export async function PUT(request: NextRequest) {
 
           // Create match object for scoring calculation
           const matchForScoring = {
-            winner: winner === 'PLAYER1' ? 'player1' : (winner === 'PLAYER2' ? 'player2' : null),
+            winner: winner === 'PLAYER1' ? 'player1' : 'player2',  // Now guaranteed to be valid
             setScores: setScores,
             player1Sets,
             player2Sets,
@@ -361,14 +366,27 @@ export async function PUT(request: NextRequest) {
 
           // Update points for each prediction
           for (const prediction of predictions) {
+            const predictionData = {
+              winner: prediction.winner,
+              setScores: prediction.setScores as { p1: number; p2: number; tiebreak?: string }[] | null,
+              firstSetWinner: prediction.firstSetWinner
+            };
+
             const points = calculatePredictionPoints(
-              {
-                winner: prediction.winner,
-                setScores: prediction.setScores as { p1: number; p2: number; tiebreak?: string }[] | null,
-                firstSetWinner: prediction.firstSetWinner
-              },
+              predictionData,
               matchForScoring
             );
+
+            // Log for debugging points calculation
+            console.log('Points calculation:', {
+              matchId: matchId,
+              userId: prediction.userId,
+              predictionWinner: predictionData.winner,
+              matchWinner: matchForScoring.winner,
+              calculatedPoints: points,
+              predictionSetScores: predictionData.setScores,
+              matchSetScores: matchForScoring.setScores
+            });
 
             await tx.prediction.update({
               where: { id: prediction.id },
@@ -377,11 +395,9 @@ export async function PUT(request: NextRequest) {
           }
 
           // After updating all predictions, recalculate total points for all affected users
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const affectedUserIds = new Set(predictions.map((p: any) => p.userId));
-          const affectedUsers = Array.from(affectedUserIds);
+          const affectedUserIds = Array.from(new Set(predictions.map((p: { userId: string }) => p.userId)));
           
-          for (const userId of affectedUsers) {
+          for (const userId of affectedUserIds) {
             // Calculate total points from all predictions
             const userPredictions = await tx.prediction.findMany({
               where: { userId }
@@ -445,19 +461,45 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Match ID is required' }, { status: 400 })
     }
 
-    // Transaction to ensure both operations succeed or fail together
-    await prisma.$transaction([
-      // First, delete all predictions for this match
-      prisma.prediction.deleteMany({
+    // Use transaction to ensure atomicity
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await prisma.$transaction(async (tx: any) => {
+      // 1. Get all predictions for this match to know which users to update
+      const predictions = await tx.prediction.findMany({
         where: { matchId: matchId },
-      }),
-      // Then, delete the match itself
-      prisma.match.delete({
-        where: { id: matchId },
-      })
-    ])
+        select: { userId: true }
+      });
 
-    return NextResponse.json({ success: true, message: 'Match deleted successfully' })
+      const affectedUserIds = Array.from(new Set(predictions.map((p: { userId: string }) => p.userId)));
+
+      // 2. Delete all predictions for this match
+      await tx.prediction.deleteMany({
+        where: { matchId: matchId },
+      });
+
+      // 3. Delete the match itself
+      await tx.match.delete({
+        where: { id: matchId },
+      });
+
+      // 4. Recalculate total points for all affected users
+      for (const userId of affectedUserIds) {
+        // Calculate total points from remaining predictions
+        const userPredictions = await tx.prediction.findMany({
+          where: { userId }
+        });
+        
+        const totalPoints = userPredictions.reduce((sum: number, pred: { pointsEarned: number }) => sum + (pred.pointsEarned || 0), 0);
+        
+        // Update user's total points
+        await tx.user.update({
+          where: { id: userId },
+          data: { points: totalPoints }
+        });
+      }
+    });
+
+    return NextResponse.json({ success: true, message: 'Match deleted successfully and user points recalculated' })
   } catch (error) {
     console.error('Error deleting match:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

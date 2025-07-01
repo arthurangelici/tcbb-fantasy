@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0 // Don't cache this route
 
 // Type for the session with user data
 type SessionWithUser = {
@@ -147,7 +148,18 @@ export async function GET() {
       recentMatches: formattedRecentMatches
     }
 
-    return NextResponse.json(stats)
+    const response = NextResponse.json({
+      ...stats,
+      timestamp: new Date().toISOString() // Add timestamp for cache busting
+    })
+    
+    // Set cache control headers to prevent caching
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    response.headers.set('Surrogate-Control', 'no-store')
+    
+    return response
   } catch (error) {
     console.error('Error fetching user stats:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

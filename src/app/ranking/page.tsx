@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Trophy, TrendingUp, Target, Star, Medal, Crown, Award } from "lucide-react"
+import { Trophy, TrendingUp, Target, Star, Medal, Crown, Award, RefreshCw } from "lucide-react"
 
 interface PlayerData {
   id: string;
@@ -103,9 +103,6 @@ function PlayerRankingCard({
                     Você
                   </Badge>
                 )}
-                <Badge variant="outline" className="text-xs">
-                  Cat. {player.category}
-                </Badge>
               </div>
               <p className="text-sm text-gray-600">{player.email}</p>
               <div className="flex items-center space-x-4 mt-2">
@@ -156,11 +153,25 @@ export default function RankingPage() {
   const [ranking, setRanking] = useState<PlayerData[]>([])
   const [stats, setStats] = useState<RankingStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   
-  const fetchRanking = useCallback(async () => {
+  const fetchRanking = useCallback(async (showRefreshLoader = false) => {
     try {
-      setLoading(true)
-      const response = await fetch(`/api/ranking?category=${categoryFilter}`)
+      if (showRefreshLoader) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
+      }
+      
+      // Add timestamp to prevent caching
+      const timestamp = new Date().getTime()
+      const response = await fetch(`/api/ranking?category=${categoryFilter}&t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
+      
       if (response.ok) {
         const data = await response.json()
         setRanking(data.ranking)
@@ -170,12 +181,32 @@ export default function RankingPage() {
       console.error('Error fetching ranking:', error)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }, [categoryFilter])
+
+  const handleRefresh = useCallback(() => {
+    fetchRanking(true)
+  }, [fetchRanking])
 
   useEffect(() => {
     fetchRanking()
   }, [categoryFilter, fetchRanking])
+
+  // Auto-refresh when page becomes visible (useful when matches are updated)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchRanking(true)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [fetchRanking])
   
   const filteredRanking = ranking.filter(player => {
     if (filter === 'top10') return player.position && player.position <= 10
@@ -221,9 +252,21 @@ export default function RankingPage() {
         </p>
       </div>
 
-      {/* Category Filter */}
+      {/* Category Filter and Refresh */}
       <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-4">Filtrar por Categoria</h3>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+          <h3 className="text-lg font-semibold mb-2 sm:mb-0">Filtrar por Categoria</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Atualizando...' : 'Atualizar Ranking'}
+          </Button>
+        </div>
         <div className="flex flex-wrap gap-2">
           <Button
             variant={categoryFilter === 'general' ? "default" : "outline"}
