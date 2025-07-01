@@ -52,13 +52,10 @@ export async function GET() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Get user's prediction history with match details
+    // Get user's prediction history with match details (both finished and unfinished)
     const predictions = await prisma.prediction.findMany({
       where: { 
-        userId: user.id,
-        match: {
-          status: 'FINISHED' // Only show predictions for finished matches
-        }
+        userId: user.id
       },
       include: {
         match: {
@@ -71,7 +68,7 @@ export async function GET() {
       },
       orderBy: {
         match: {
-          finishedAt: 'desc'
+          scheduledAt: 'desc'
         }
       }
     })
@@ -79,6 +76,7 @@ export async function GET() {
     // Format the data for the frontend
     const formattedHistory = predictions.map((prediction: PredictionWithMatch) => {
       const match = prediction.match
+      const isFinished = match.status === 'FINISHED'
       
       // Determine the predicted winner name
       let predictedWinner = 'N/A'
@@ -90,8 +88,10 @@ export async function GET() {
 
       // Determine the actual winner name
       let actualWinner = 'N/A'
-      if (match.winner) {
+      if (isFinished && match.winner) {
         actualWinner = match.winner.name
+      } else if (!isFinished) {
+        actualWinner = 'Aguardando jogo'
       }
 
       // Determine prediction type and details
@@ -115,9 +115,10 @@ export async function GET() {
         prediction: predictionDetails,
         result: actualWinner,
         points: prediction.pointsEarned,
-        correct: prediction.pointsEarned > 0,
+        correct: isFinished ? prediction.pointsEarned > 0 : null, // null for unfinished matches
         type: predictionType,
-        category: match.category
+        category: match.category,
+        isFinished: isFinished
       }
     })
 
