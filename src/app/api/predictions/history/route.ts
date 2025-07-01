@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import type { Prisma } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,7 +18,18 @@ type SessionWithUser = {
   expires: string
 }
 
-// We'll use Prisma's inferred types instead of defining custom types
+// Type for prediction with included match data
+type PredictionWithMatch = Prisma.PredictionGetPayload<{
+  include: {
+    match: {
+      include: {
+        player1: true
+        player2: true
+        winner: true
+      }
+    }
+  }
+}>
 
 export async function GET() {
   try {
@@ -61,7 +73,7 @@ export async function GET() {
     })
 
     // Format the data for the frontend
-    const formattedHistory = predictions.map((prediction: any) => {
+    const formattedHistory = predictions.map((prediction: PredictionWithMatch) => {
       const match = prediction.match
       
       // Determine the predicted winner name
