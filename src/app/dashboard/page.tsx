@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Trophy, Target, TrendingUp, Calendar, Award } from "lucide-react"
+import { Trophy, Target, TrendingUp, Calendar, Award, RefreshCw } from "lucide-react"
 import Link from "next/link"
 
 interface UserStats {
@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const { data: session, status } = useSession()
   const [stats, setStats] = useState<UserStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     if (session?.user?.email) {
@@ -38,9 +39,23 @@ export default function DashboardPage() {
     }
   }, [session])
 
-  const fetchUserStats = async () => {
+  const fetchUserStats = async (showRefreshLoader = false) => {
     try {
-      const response = await fetch('/api/users/stats')
+      if (showRefreshLoader) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
+      }
+      
+      // Add timestamp to prevent caching
+      const timestamp = new Date().getTime()
+      const response = await fetch(`/api/users/stats?t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
+      
       if (response.ok) {
         const data = await response.json()
         setStats(data)
@@ -49,8 +64,28 @@ export default function DashboardPage() {
       console.error('Error fetching user stats:', error)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
+
+  const handleRefresh = () => {
+    fetchUserStats(true)
+  }
+
+  // Auto-refresh when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && session?.user?.email) {
+        fetchUserStats(true)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [session])
 
   if (status === "loading" || loading) {
     return (
@@ -85,12 +120,26 @@ export default function DashboardPage() {
     <div className="container mx-auto px-4 py-8">
       {/* Welcome Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Bem-vindo, {session.user?.name || session.user?.email}!
-        </h1>
-        <p className="text-gray-600">
-          Acompanhe suas estatísticas e faça novos palpites no torneio
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Bem-vindo, {session.user?.name || session.user?.email}!
+            </h1>
+            <p className="text-gray-600">
+              Acompanhe suas estatísticas e faça novos palpites no torneio
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2 mt-4 sm:mt-0"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Atualizando...' : 'Atualizar'}
+          </Button>
+        </div>
       </div>
 
       {/* Stats Grid */}
