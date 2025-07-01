@@ -77,6 +77,7 @@ function MatchManagement() {
   const [selectedMatch, setSelectedMatch] = useState < number | null > (null)
   const [editingMatch, setEditingMatch] = useState < number | null > (null)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<'ALL' | 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB'>('ALL')
   const [loading, setLoading] = useState(true)
   const [matchResult, setMatchResult] = useState({
     winner: '',
@@ -277,6 +278,16 @@ function MatchManagement() {
     }
   };
 
+  // Função para filtrar partidas por categoria
+  const getFilteredMatches = () => {
+    if (selectedCategoryFilter === 'ALL') {
+      return matches
+    }
+    return matches.filter(match => match.category === selectedCategoryFilter)
+  }
+
+  const filteredMatches = getFilteredMatches()
+
   if (loading) {
     return (
       <div className="animate-pulse space-y-4">
@@ -293,9 +304,43 @@ function MatchManagement() {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Gerenciar Partidas</h2>
         <div className="flex items-center space-x-2">
-          <Badge variant="secondary">{matches.length} partidas</Badge>
+          <Badge variant="secondary">{filteredMatches.length} de {matches.length} partidas</Badge>
           <Button onClick={() => setShowCreateForm(!showCreateForm)}>
             {showCreateForm ? 'Cancelar' : 'Criar Nova Partida'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Category Filter */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold mb-4">Filtrar por Categoria</h3>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={selectedCategoryFilter === 'ALL' ? "default" : "outline"}
+            onClick={() => setSelectedCategoryFilter('ALL')}
+          >
+            Todas as Categorias
+          </Button>
+          {['A', 'B', 'C'].map((category) => (
+            <Button
+              key={category}
+              variant={selectedCategoryFilter === category ? "default" : "outline"}
+              onClick={() => setSelectedCategoryFilter(category as 'A' | 'B' | 'C')}
+            >
+              Categoria {category}
+            </Button>
+          ))}
+          <Button
+            variant={selectedCategoryFilter === 'ATP' ? "default" : "outline"}
+            onClick={() => setSelectedCategoryFilter('ATP')}
+          >
+            ATP
+          </Button>
+          <Button
+            variant={selectedCategoryFilter === 'RANKING_TCBB' ? "default" : "outline"}
+            onClick={() => setSelectedCategoryFilter('RANKING_TCBB')}
+          >
+            Ranking TCBB
           </Button>
         </div>
       </div>
@@ -414,7 +459,7 @@ function MatchManagement() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {matches.map((match) => (
+        {filteredMatches.map((match) => (
           <Card key={match.id} className="flex flex-col">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -583,6 +628,22 @@ function MatchManagement() {
         ))}
 
       </div>
+
+      {filteredMatches.length === 0 && (
+        <div className="text-center py-12">
+          <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Nenhuma partida encontrada
+          </h3>
+          <p className="text-gray-600">
+            {selectedCategoryFilter === 'ALL' 
+              ? 'Nenhuma partida foi criada ainda.'
+              : `Nenhuma partida encontrada para a categoria ${selectedCategoryFilter}.`
+            }
+          </p>
+        </div>
+      )}
+
     </div>
   )
 }

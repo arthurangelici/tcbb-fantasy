@@ -61,7 +61,7 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <CardDescription>
-              Acompanhe sua posição no ranking e compete com outros participantes
+              Acompanhe sua posição no ranking e concorra com outros participantes
             </CardDescription>
           </CardContent>
         </Card>
@@ -107,7 +107,7 @@ export default function Home() {
             </div>
             <h3 className="text-xl font-semibold mb-2">Suba no Ranking</h3>
             <p className="text-gray-600">
-              Compete com outros participantes e prove que você é o melhor analista de tênis!
+              concorra com outros participantes e prove que você é o melhor analista de tênis!
             </p>
           </div>
         </div>

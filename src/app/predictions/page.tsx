@@ -290,14 +290,37 @@ function TournamentBetsTab({
   const [selectedBets, setSelectedBets] = useState<Record<string, string>>({})
   const [selectedCategory, setSelectedCategory] = useState<string>('A')
   const [players, setPlayers] = useState<string[]>([])
+  const [loadingPlayers, setLoadingPlayers] = useState(false)
+
+  // Ensure we have all categories including ATP
+  const allCategories = [
+    ...categories,
+    // Add ATP if not already present
+    ...(categories.find(cat => cat.id === 'ATP') ? [] : [{ id: 'ATP', name: 'ATP', description: 'Categoria ATP' }])
+  ]
 
   useEffect(() => {
-    // This would fetch players for the selected category
-    // For now, using placeholder data
-    setPlayers([
-      'Carlos Silva', 'João Santos', 'Pedro Oliveira', 'Lucas Costa',
-      'André Ferreira', 'Rafael Lima', 'Bruno Martins', 'Gabriel Rocha'
-    ])
+    // Fetch players for the selected category
+    const fetchPlayers = async () => {
+      try {
+        setLoadingPlayers(true)
+        const response = await fetch(`/api/players?category=${selectedCategory}`)
+        if (response.ok) {
+          const data = await response.json()
+          setPlayers(data.players || [])
+        } else {
+          console.error('Failed to fetch players for category:', selectedCategory)
+          setPlayers([])
+        }
+      } catch (error) {
+        console.error('Error fetching players:', error)
+        setPlayers([])
+      } finally {
+        setLoadingPlayers(false)
+      }
+    }
+
+    fetchPlayers()
   }, [selectedCategory])
 
   return (
@@ -318,16 +341,15 @@ function TournamentBetsTab({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {categories.map((category) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {allCategories.map((category) => (
               <Button
                 key={category.id}
                 variant={selectedCategory === category.id ? 'default' : 'outline'}
                 onClick={() => setSelectedCategory(category.id)}
-                className="h-auto flex-col p-4"
+                className="h-auto p-4"
               >
                 <div className="text-lg font-semibold">{category.name}</div>
-                <div className="text-sm opacity-70 mt-1">{category.description}</div>
               </Button>
             ))}
           </div>
@@ -359,9 +381,16 @@ function TournamentBetsTab({
                   className="w-full p-2 border rounded-md"
                   value={selectedBets[betKey] || ''}
                   onChange={(e) => setSelectedBets(prev => ({ ...prev, [betKey]: e.target.value }))}
+                  disabled={loadingPlayers || players.length === 0}
                 >
-                  <option value="">Selecione um jogador...</option>
-                  {players.map((player) => (
+                  <option value="">
+                    {loadingPlayers 
+                      ? 'Carregando jogadores...' 
+                      : players.length === 0 
+                        ? 'Nenhum jogador encontrado para esta categoria'
+                        : 'Selecione um jogador...'}
+                  </option>
+                  {!loadingPlayers && players.map((player) => (
                     <option key={player} value={player}>{player}</option>
                   ))}
                 </select>
@@ -382,7 +411,7 @@ function TournamentBetsTab({
 
 export default function PredictionsPage() {
   const { data: session } = useSession()
-  const [selectedMatchCategory, setSelectedMatchCategory] = useState<'A' | 'B' | 'C' | 'ALL'>('ALL')
+  const [selectedMatchCategory, setSelectedMatchCategory] = useState<'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB' | 'ALL'>('ALL')
   const [matchesByCategory, setMatchesByCategory] = useState<Record<string, Match[]>>({})
   const [categories, setCategories] = useState<Category[]>([])
   const [tournamentBets, setTournamentBets] = useState<TournamentBet[]>([])
@@ -547,6 +576,18 @@ export default function PredictionsPage() {
                   Categoria {category}
                 </Button>
               ))}
+              <Button
+                variant={selectedMatchCategory === 'ATP' ? "default" : "outline"}
+                onClick={() => setSelectedMatchCategory('ATP')}
+              >
+                ATP
+              </Button>
+              <Button
+                variant={selectedMatchCategory === 'RANKING_TCBB' ? "default" : "outline"}
+                onClick={() => setSelectedMatchCategory('RANKING_TCBB')}
+              >
+                Ranking TCBB
+              </Button>
             </div>
           </div>
 
