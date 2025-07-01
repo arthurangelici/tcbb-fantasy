@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     
     // Get all matches with players
     const matches = await prisma.match.findMany({
-      where: category && category !== 'ALL' ? { category: category as 'A' | 'B' | 'C' } : {},
+      where: category && category !== 'ALL' ? { category: category as 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB' } : {},
       include: {
         player1: true,
         player2: true
@@ -51,7 +51,17 @@ export async function GET(request: NextRequest) {
         'ROUND_OF_16': 'Oitavas de Final', 
         'QUARTERFINALS': 'Quartas de Final',
         'SEMIFINALS': 'Semifinais',
-        'FINAL': 'Final'
+        'FINAL': 'Final',
+        // Ranking TCBB rounds
+        'ROUND_1': 'Rodada 1',
+        'ROUND_2': 'Rodada 2',
+        'ROUND_3': 'Rodada 3',
+        'ROUND_4': 'Rodada 4',
+        'ROUND_5': 'Rodada 5',
+        'ROUND_6': 'Rodada 6',
+        'ROUND_7': 'Rodada 7',
+        'ROUND_8': 'Rodada 8',
+        'ROUND_9': 'Rodada 9'
       }
 
       const roundName = `${roundNames[match.round] || match.round} - Categoria ${cat}`
@@ -115,7 +125,7 @@ export async function GET(request: NextRequest) {
 
     // Category-specific stats
     const categoryStats: Record<string, { total: number; completed: number }> = {}
-    for (const cat of ['A', 'B', 'C']) {
+    for (const cat of ['A', 'B', 'C', 'ATP', 'RANKING_TCBB']) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const categoryMatches = matches.filter((m: any) => m.category === cat)
       categoryStats[cat] = {

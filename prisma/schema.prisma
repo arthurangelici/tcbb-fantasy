@@ -171,6 +171,16 @@ enum TournamentRound {
   QUARTERFINALS
   SEMIFINALS
   FINAL
+  // Ranking TCBB rounds
+  ROUND_1
+  ROUND_2
+  ROUND_3
+  ROUND_4
+  ROUND_5
+  ROUND_6
+  ROUND_7
+  ROUND_8
+  ROUND_9
 }
 
 enum TournamentBetType {
@@ -188,4 +198,6 @@ enum TournamentCategory {
   A
   B
   C
+  ATP
+  RANKING_TCBB
 }

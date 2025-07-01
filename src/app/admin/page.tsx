@@ -99,6 +99,15 @@ function MatchManagement() {
     fetchMatches()
   }, [])
 
+  useEffect(() => {
+    // Reset round when category changes
+    if (newMatch.category === 'RANKING_TCBB') {
+      setNewMatch(prev => ({ ...prev, round: 'ROUND_1' }))
+    } else {
+      setNewMatch(prev => ({ ...prev, round: 'QUARTERFINALS' }))
+    }
+  }, [newMatch.category])
+
   const fetchMatches = async () => {
     try {
       setLoading(true)
@@ -340,6 +349,8 @@ function MatchManagement() {
                   <option value="A">Categoria A</option>
                   <option value="B">Categoria B</option>
                   <option value="C">Categoria C</option>
+                  <option value="ATP">ATP</option>
+                  <option value="RANKING_TCBB">Ranking TCBB</option>
                 </select>
               </div>
               <div>
@@ -353,9 +364,28 @@ function MatchManagement() {
                     round: e.target.value
                   }))}
                 >
-                  <option value="QUARTERFINALS">Quartas de Final</option>
-                  <option value="SEMIFINALS">Semifinais</option>
-                  <option value="FINAL">Final</option>
+                  {newMatch.category === 'RANKING_TCBB' ? (
+                    // Ranking TCBB rounds (1-9)
+                    <>
+                      <option value="ROUND_1">Rodada 1</option>
+                      <option value="ROUND_2">Rodada 2</option>
+                      <option value="ROUND_3">Rodada 3</option>
+                      <option value="ROUND_4">Rodada 4</option>
+                      <option value="ROUND_5">Rodada 5</option>
+                      <option value="ROUND_6">Rodada 6</option>
+                      <option value="ROUND_7">Rodada 7</option>
+                      <option value="ROUND_8">Rodada 8</option>
+                      <option value="ROUND_9">Rodada 9</option>
+                    </>
+                  ) : (
+                    // Standard tournament format (A, B, C, ATP)
+                    <>
+                      <option value="FIRST_ROUND">1ª Rodada</option>
+                      <option value="QUARTERFINALS">Quartas de Final</option>
+                      <option value="SEMIFINALS">Semifinais</option>
+                      <option value="FINAL">Final</option>
+                    </>
+                  )}
                 </select>
               </div>
               <div className="md:col-span-2">

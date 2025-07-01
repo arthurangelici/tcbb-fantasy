@@ -11,18 +11,22 @@ interface PlayerData {
   id: string;
   name: string;
   email: string;
-  category: 'A' | 'B' | 'C';
+  category: 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB';
   pointsByCategory: {
     general: number;
     A: number;
     B: number;
     C: number;
+    ATP: number;
+    RANKING_TCBB: number;
   };
   predictionsByCategory: {
     general: { correct: number; total: number };
     A: { correct: number; total: number };
     B: { correct: number; total: number };
     C: { correct: number; total: number };
+    ATP: { correct: number; total: number };
+    RANKING_TCBB: { correct: number; total: number };
   };
   streak: number;
   position?: number;
@@ -79,7 +83,7 @@ function PlayerRankingCard({
 }: { 
   player: PlayerData, 
   currentUser?: boolean, 
-  categoryFilter?: 'general' | 'A' | 'B' | 'C'
+  categoryFilter?: 'general' | 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB'
 }) {
   const points = player.pointsByCategory[categoryFilter] || 0
   const predictions = player.predictionsByCategory[categoryFilter] || { correct: 0, total: 0 }
@@ -134,7 +138,7 @@ function PlayerRankingCard({
               <span className="text-xs">
                 {categoryFilter !== 'general' && (
                   <span className="text-xs text-blue-600">
-                    Cat. {categoryFilter}
+                    {categoryFilter === 'ATP' ? 'ATP' : categoryFilter === 'RANKING_TCBB' ? 'Ranking TCBB' : `Cat. ${categoryFilter}`}
                   </span>
                 )}
               </span>
@@ -149,7 +153,7 @@ function PlayerRankingCard({
 export default function RankingPage() {
   const { data: session } = useSession()
   const [filter, setFilter] = useState<'all' | 'top10'>('all')
-  const [categoryFilter, setCategoryFilter] = useState<'general' | 'A' | 'B' | 'C'>('general')
+  const [categoryFilter, setCategoryFilter] = useState<'general' | 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB'>('general')
   const [ranking, setRanking] = useState<PlayerData[]>([])
   const [stats, setStats] = useState<RankingStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -242,12 +246,12 @@ export default function RankingPage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Ranking {categoryFilter === 'general' ? 'Geral' : `Categoria ${categoryFilter}`}
+          Ranking {categoryFilter === 'general' ? 'Geral' : (categoryFilter === 'ATP' ? 'ATP' : categoryFilter === 'RANKING_TCBB' ? 'Ranking TCBB' : `Categoria ${categoryFilter}`)}
         </h1>
         <p className="text-gray-600">
           {categoryFilter === 'general' 
             ? 'Veja como você se compara com outros participantes considerando todas as categorias'
-            : `Ranking baseado apenas em pontos obtidos na categoria ${categoryFilter}`
+            : `Ranking baseado apenas em pontos obtidos na categoria ${categoryFilter === 'ATP' ? 'ATP' : categoryFilter === 'RANKING_TCBB' ? 'Ranking TCBB' : categoryFilter}`
           }
         </p>
       </div>
@@ -274,15 +278,18 @@ export default function RankingPage() {
           >
             Ranking Geral
           </Button>
-          {['A', 'B', 'C'].map((category) => (
-            <Button
-              key={category}
-              variant={categoryFilter === category ? "default" : "outline"}
-              onClick={() => setCategoryFilter(category as 'A' | 'B' | 'C')}
-            >
-              Categoria {category}
-            </Button>
-          ))}
+          {['A', 'B', 'C', 'ATP', 'RANKING_TCBB'].map((category) => {
+            const displayName = category === 'ATP' ? 'ATP' : category === 'RANKING_TCBB' ? 'Ranking TCBB' : `Categoria ${category}`
+            return (
+              <Button
+                key={category}
+                variant={categoryFilter === category ? "default" : "outline"}
+                onClick={() => setCategoryFilter(category as 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB')}
+              >
+                {displayName}
+              </Button>
+            )
+          })}
         </div>
         {categoryFilter !== 'general' && (
           <div className="mt-2 p-3 bg-blue-50 rounded-lg">
