@@ -113,11 +113,8 @@ model Prediction {
 
   // Prediction fields
   winner           String? // player1 or player2
-  exactScore       String? // "2-0" or "2-1"
-  goesToThirdSet   Boolean?
+  setScores        Json?   // Array of predicted set scores: [{ p1: number, p2: number, tiebreak?: string }]
   firstSetWinner   String? // player1 or player2
-  willHaveTiebreak Boolean?
-  marginOfVictory  MarginType? // CLOSE or COMFORTABLE
 
   // Points earned (calculated after match)
   pointsEarned Int @default(0)
@@ -174,11 +171,6 @@ enum TournamentRound {
   QUARTERFINALS
   SEMIFINALS
   FINAL
-}
-
-enum MarginType {
-  CLOSE
-  COMFORTABLE
 }
 
 enum TournamentBetType {

@@ -12,19 +12,15 @@ export function formatPoints(points: number): string {
 export function calculatePredictionPoints(
   prediction: {
     winner?: string | null
-    exactScore?: string | null
-    goesToThirdSet?: boolean | null
+    setScores?: { p1: number; p2: number; tiebreak?: string }[] | null
     firstSetWinner?: string | null
-    willHaveTiebreak?: boolean | null
-    marginOfVictory?: string | null
   },
   match: {
     winner?: string | null
+    setScores?: { p1: number; p2: number; tiebreak?: string }[] | null
     player1Sets: number
     player2Sets: number
     hadTiebreak: boolean
-    player1Games?: string | null
-    player2Games?: string | null
   }
 ): number {
   let totalPoints = 0
@@ -34,36 +30,53 @@ export function calculatePredictionPoints(
     totalPoints += 5
   }
 
-  // Exact score prediction (15 points)
-  const actualScore = `${Math.max(match.player1Sets, match.player2Sets)}-${Math.min(match.player1Sets, match.player2Sets)}`
-  if (prediction.exactScore === actualScore) {
-    totalPoints += 15
+  // Detailed set score prediction (15 points)
+  if (prediction.setScores && match.setScores && Array.isArray(prediction.setScores) && Array.isArray(match.setScores)) {
+    let perfectMatch = true
+    const minLength = Math.min(prediction.setScores.length, match.setScores.length)
+    
+    for (let i = 0; i < minLength; i++) {
+      const predSet = prediction.setScores[i]
+      const actualSet = match.setScores[i]
+      
+      if (predSet.p1 !== actualSet.p1 || predSet.p2 !== actualSet.p2) {
+        perfectMatch = false
+        break
+      }
+      
+      // Check tiebreak prediction
+      if (predSet.tiebreak && actualSet.tiebreak) {
+        if (predSet.tiebreak !== actualSet.tiebreak) {
+          perfectMatch = false
+          break
+        }
+      } else if (predSet.tiebreak || actualSet.tiebreak) {
+        // One has tiebreak, other doesn't
+        perfectMatch = false
+        break
+      }
+    }
+    
+    // Only award points if lengths match too (predicted correct number of sets)
+    if (perfectMatch && prediction.setScores.length === match.setScores.length) {
+      totalPoints += 15
+    }
   }
 
-  // Third set prediction (8 points)
-  const wentToThirdSet = match.player1Sets === 2 || match.player2Sets === 2
-  if (prediction.goesToThirdSet === wentToThirdSet) {
-    totalPoints += 8
-  }
-
-  // First set winner (3 points) - would need to parse games data
-  // For now, simplified logic
-  if (prediction.firstSetWinner === match.winner) {
-    totalPoints += 3
-  }
-
-  // Tiebreak prediction (5 points)
-  if (prediction.willHaveTiebreak === match.hadTiebreak) {
-    totalPoints += 5
-  }
-
-  // Margin of victory (7 points)
-  // This would need more complex logic based on game scores
-  // For now, assume close if 2-1, comfortable if 2-0
-  const isClose = Math.abs(match.player1Sets - match.player2Sets) === 1
-  const expectedMargin = isClose ? 'CLOSE' : 'COMFORTABLE'
-  if (prediction.marginOfVictory === expectedMargin) {
-    totalPoints += 7
+  // First set winner (3 points) - check first set from detailed scores
+  if (prediction.firstSetWinner && match.setScores && Array.isArray(match.setScores) && match.setScores.length > 0) {
+    const firstSet = match.setScores[0]
+    let actualFirstSetWinner = null
+    
+    if (firstSet.p1 > firstSet.p2) {
+      actualFirstSetWinner = 'player1'
+    } else if (firstSet.p2 > firstSet.p1) {
+      actualFirstSetWinner = 'player2'
+    }
+    
+    if (prediction.firstSetWinner === actualFirstSetWinner) {
+      totalPoints += 3
+    }
   }
 
   return totalPoints

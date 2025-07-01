@@ -197,16 +197,30 @@ async function main() {
   for (const user of testUsers.slice(0, 5)) {
     const finishedMatches = matches.filter(match => match.status === 'FINISHED')
     for (const match of finishedMatches) {
+      // Generate sample set scores
+      const numSets = Math.random() > 0.5 ? 2 : 3
+      const setScores = []
+      
+      for (let i = 0; i < numSets; i++) {
+        const p1Score = Math.floor(Math.random() * 7) + 1  // 1-7
+        const p2Score = Math.floor(Math.random() * 7) + 1  // 1-7
+        const set: any = { p1: p1Score, p2: p2Score }
+        
+        // Add tiebreak for some sets
+        if (Math.random() > 0.7) {
+          set.tiebreak = Math.random() > 0.5 ? '7-5' : '10-8'
+        }
+        
+        setScores.push(set)
+      }
+
       await prisma.prediction.create({
         data: {
           userId: user.id,
           matchId: match.id,
           winner: Math.random() > 0.5 ? 'player1' : 'player2',
-          exactScore: Math.random() > 0.5 ? '2-0' : '2-1',
-          goesToThirdSet: Math.random() > 0.5,
+          setScores: setScores,
           firstSetWinner: Math.random() > 0.5 ? 'player1' : 'player2',
-          willHaveTiebreak: Math.random() > 0.3,
-          marginOfVictory: Math.random() > 0.5 ? 'COMFORTABLE' : 'CLOSE',
           pointsEarned: Math.floor(Math.random() * 25),
         },
       })
