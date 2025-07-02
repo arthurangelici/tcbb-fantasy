@@ -155,14 +155,21 @@ function MatchPredictionCard({ match }: { match: Match }) {
           {/* Detailed Set Scores */}
           <div>
             <label className="text-sm font-medium mb-2 block">
-              Placar detalhado dos sets (15 pontos)
+              {match.category === 'ATP' ? 'Placar (15 pontos)' : 'Placar detalhado dos sets (15 pontos)'}
             </label>
+            {match.category === 'ATP' && (
+              <p className="text-sm text-gray-600 mb-3">
+                Placar em número de sets (ex: 2x1, 3x1)
+              </p>
+            )}
             <div className="space-y-4">
               {prediction.setScores?.map((set, index) => (
                 <div key={index} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <Label className="font-medium">{index + 1}º Set</Label>
-                    {index >= 1 && (
+                    <Label className="font-medium">
+                      {match.category === 'ATP' ? 'Placar final' : `${index + 1}º Set`}
+                    </Label>
+                    {index >= 1 && match.category !== 'ATP' && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -205,24 +212,26 @@ function MatchPredictionCard({ match }: { match: Match }) {
                     />
                     <div className="text-sm font-medium text-center">{match.player2.name}</div>
                   </div>
-                  {/* Tiebreak score for current set */}
-                  <div className="mt-3">
-                    <Label className="text-sm">Tiebreak (ex: 7-5)</Label>
-                    <Input
-                      type="text"
-                      placeholder="Deixe vazio se não houver tiebreak"
-                      value={set.tiebreak || ''}
-                      onChange={(e) => {
-                        const newSets = [...(prediction.setScores || [])];
-                        newSets[index].tiebreak = e.target.value;
-                        setPrediction(prev => ({ ...prev, setScores: newSets }));
-                      }}
-                    />
-                  </div>
+                  {/* Tiebreak score for current set - hidden for ATP */}
+                  {match.category !== 'ATP' && (
+                    <div className="mt-3">
+                      <Label className="text-sm">Tiebreak (ex: 7-5)</Label>
+                      <Input
+                        type="text"
+                        placeholder="Deixe vazio se não houver tiebreak"
+                        value={set.tiebreak || ''}
+                        onChange={(e) => {
+                          const newSets = [...(prediction.setScores || [])];
+                          newSets[index].tiebreak = e.target.value;
+                          setPrediction(prev => ({ ...prev, setScores: newSets }));
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
               
-              {prediction.setScores && prediction.setScores.length < 3 && (
+              {prediction.setScores && prediction.setScores.length < 3 && match.category !== 'ATP' && (
                 <Button
                   size="sm"
                   variant="outline"
