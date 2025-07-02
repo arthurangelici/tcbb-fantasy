@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { TournamentCategory } from '@prisma/client'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,14 +13,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Validar se a categoria é válida
-    if (!Object.values(TournamentCategory).includes(category as TournamentCategory)) {
+    const validCategories = ['A', 'B', 'C', 'ATP', 'RANKING_TCBB']
+    if (!validCategories.includes(category)) {
       return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
     }
 
     // Buscar jogadores que possuem confrontos agendados na categoria especificada
     const matches = await prisma.match.findMany({
       where: {
-        category: category as TournamentCategory,
+        category: category as 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB',
         // Opcionalmente, filtrar apenas partidas não finalizadas
         // finishedAt: null
       },
@@ -40,7 +42,8 @@ export async function GET(request: NextRequest) {
     // Extrair nomes únicos dos jogadores
     const playerNames = new Set<string>()
     
-    matches.forEach(match => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    matches.forEach((match: any) => {
       if (match.player1?.name) playerNames.add(match.player1.name)
       if (match.player2?.name) playerNames.add(match.player2.name)
     })

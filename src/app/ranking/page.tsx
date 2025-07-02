@@ -108,7 +108,6 @@ function PlayerRankingCard({
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-gray-600">{player.email}</p>
               <div className="flex items-center space-x-4 mt-2">
                 <div className="flex items-center space-x-1">
                   <Target className="h-4 w-4 text-gray-400" />

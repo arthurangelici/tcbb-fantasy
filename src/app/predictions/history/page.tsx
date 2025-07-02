@@ -15,9 +15,10 @@ interface PredictionHistory {
   prediction: string
   result: string
   points: number
-  correct: boolean
+  correct: boolean | null
   type: string
   category: string
+  isFinished: boolean
 }
 
 export default function PredictionHistoryPage() {
@@ -51,8 +52,9 @@ export default function PredictionHistoryPage() {
   }, [session])
 
   const totalPoints = predictionHistory.reduce((sum, pred) => sum + pred.points, 0)
-  const correctPredictions = predictionHistory.filter(pred => pred.correct).length
-  const successRate = predictionHistory.length > 0 ? (correctPredictions / predictionHistory.length * 100).toFixed(1) : 0
+  const finishedPredictions = predictionHistory.filter(pred => pred.isFinished)
+  const correctPredictions = finishedPredictions.filter(pred => pred.correct).length
+  const successRate = finishedPredictions.length > 0 ? (correctPredictions / finishedPredictions.length * 100).toFixed(1) : 0
 
   if (loading) {
     return (
@@ -143,9 +145,15 @@ export default function PredictionHistoryPage() {
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={prediction.correct ? "default" : "destructive"}>
-                      {prediction.correct ? "Acertou" : "Errou"}
-                    </Badge>
+                    {prediction.isFinished ? (
+                      <Badge variant={prediction.correct ? "default" : "destructive"}>
+                        {prediction.correct ? "Acertou" : "Errou"}
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">
+                        Aguardando jogo
+                      </Badge>
+                    )}
                     <Badge variant="outline">
                       {prediction.points} pts
                     </Badge>
@@ -173,7 +181,7 @@ export default function PredictionHistoryPage() {
               Nenhum palpite ainda
             </h3>
             <p className="text-gray-600">
-              Seus palpites aparecerão aqui após serem feitos e as partidas finalizadas
+              Seus palpites aparecerão aqui assim que forem feitos
             </p>
           </div>
         )}
