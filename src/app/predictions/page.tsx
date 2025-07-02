@@ -166,7 +166,9 @@ function MatchPredictionCard({ match }: { match: Match }) {
               {prediction.setScores?.map((set, index) => (
                 <div key={index} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <Label className="font-medium">{index + 1}º Set</Label>
+                    <Label className="font-medium">
+                      {match.category === 'ATP' ? 'Placar final' : `${index + 1}º Set`}
+                    </Label>
                     {index >= 1 && match.category !== 'ATP' && (
                       <Button
                         size="sm"
