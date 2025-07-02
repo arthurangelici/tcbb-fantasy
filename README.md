@@ -409,13 +409,6 @@ Consulte o arquivo [LICENSE](LICENSE) para mais detalhes sobre direitos e limita
 
 ## 📞 Suporte e Contato
 
-### 🆘 **Precisa de Ajuda?**
-
-- **🐛 Bugs**: Abra uma [issue no GitHub](https://github.com/arthurangelici/tcbb-fantasy/issues)
-- **💡 Sugestões**: Use as discussions do GitHub
-- **📧 Email**: admin@tcbb.com
-- **🌐 Website**: [TCBB Fantasy](https://tcbb-fantasy.vercel.app)
-
 ### 📊 **Status do Projeto**
 - ✅ **Ativo**: Em desenvolvimento constante
 - 🚀 **Produção**: Funcionando com usuários reais
