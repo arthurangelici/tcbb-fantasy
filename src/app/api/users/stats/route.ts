@@ -71,10 +71,9 @@ export async function GET() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const position = allUsers.findIndex((u: any) => u.id === user.id) + 1
 
-    // Get recent matches with user predictions
+    // Get recent matches with user predictions (both finished and unfinished)
     const recentMatches = await prisma.match.findMany({
       where: {
-        status: 'FINISHED',
         predictions: {
           some: {
             userId: user.id
@@ -88,7 +87,7 @@ export async function GET() {
           where: { userId: user.id }
         }
       },
-      orderBy: { finishedAt: 'desc' },
+      orderBy: { scheduledAt: 'desc' },
       take: 3
     })
 
@@ -96,10 +95,11 @@ export async function GET() {
     const formattedRecentMatches = recentMatches.map((match: any) => {
       const prediction = match.predictions[0]
       const predictedWinner = prediction?.winner === 'player1' ? match.player1.name : match.player2.name
+      const isFinished = match.status === 'FINISHED'
       
       // Parse setScores to get the match result
       let result = 'N/A'
-      if (match.setScores && Array.isArray(match.setScores)) {
+      if (isFinished && match.setScores && Array.isArray(match.setScores)) {
         let player1Sets = 0
         let player2Sets = 0
         
@@ -114,6 +114,8 @@ export async function GET() {
         })
         
         result = `${player1Sets}-${player2Sets}`
+      } else if (!isFinished) {
+        result = 'Aguardando jogo'
       }
       
       return {
@@ -123,7 +125,8 @@ export async function GET() {
         result,
         userPrediction: predictedWinner || 'Sem palpite',
         points: prediction?.pointsEarned || 0,
-        correct: prediction?.pointsEarned > 0
+        correct: isFinished ? prediction?.pointsEarned > 0 : null, // null for unfinished matches
+        isFinished: isFinished
       }
     })
 

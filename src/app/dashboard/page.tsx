@@ -23,7 +23,8 @@ interface UserStats {
     result: string
     userPrediction: string
     points: number
-    correct: boolean
+    correct: boolean | null
+    isFinished: boolean
   }>
 }
 
@@ -263,13 +264,20 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className={`flex items-center space-x-2 ${
-                      match.correct ? 'text-emerald-600' : 'text-red-600'
+                      match.isFinished 
+                        ? (match.correct ? 'text-emerald-600' : 'text-red-600')
+                        : 'text-blue-600'
                     }`}>
                       <span className="text-sm font-medium">
-                        {match.correct ? `+${match.points}` : '0'} pts
+                        {match.isFinished 
+                          ? (match.correct ? `+${match.points}` : '0') 
+                          : 'Pendente'
+                        } {match.isFinished ? 'pts' : ''}
                       </span>
                       <div className={`w-2 h-2 rounded-full ${
-                        match.correct ? 'bg-emerald-600' : 'bg-red-600'
+                        match.isFinished 
+                          ? (match.correct ? 'bg-emerald-600' : 'bg-red-600')
+                          : 'bg-blue-600'
                       }`} />
                     </div>
                   </div>
