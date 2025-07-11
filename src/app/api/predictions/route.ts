@@ -64,7 +64,6 @@ export async function GET(request: NextRequest) {
       existingPrediction?: {
         winner?: string | null
         setScores?: { p1: number; p2: number }[] | null
-        firstSetWinner?: string | null
       }
     }>> = {}
     
@@ -103,8 +102,7 @@ export async function GET(request: NextRequest) {
         ...(match.predictions && match.predictions.length > 0 && {
           existingPrediction: {
             winner: match.predictions[0].winner,
-            setScores: match.predictions[0].setScores,
-            firstSetWinner: match.predictions[0].firstSetWinner
+            setScores: match.predictions[0].setScores
           }
         })
       }
@@ -155,14 +153,12 @@ export async function POST(request: NextRequest) {
       update: {
         winner: prediction.winner,
         setScores: prediction.setScores,
-        firstSetWinner: prediction.firstSetWinner,
       },
       create: {
         userId,
         matchId,
         winner: prediction.winner,
         setScores: prediction.setScores,
-        firstSetWinner: prediction.firstSetWinner,
       }
     })
 

@@ -13,7 +13,6 @@ export function calculatePredictionPoints(
   prediction: {
     winner?: string | null
     setScores?: { p1: number; p2: number; tiebreak?: string }[] | null
-    firstSetWinner?: string | null
   },
   match: {
     winner?: string | null
@@ -60,22 +59,6 @@ export function calculatePredictionPoints(
     // Only award points if lengths match too (predicted correct number of sets)
     if (perfectMatch && prediction.setScores.length === match.setScores.length) {
       totalPoints += 15
-    }
-  }
-
-  // First set winner (3 points) - check first set from detailed scores
-  if (prediction.firstSetWinner && match.setScores && Array.isArray(match.setScores) && match.setScores.length > 0) {
-    const firstSet = match.setScores[0]
-    let actualFirstSetWinner = null
-    
-    if (firstSet.p1 > firstSet.p2) {
-      actualFirstSetWinner = 'player1'
-    } else if (firstSet.p2 > firstSet.p1) {
-      actualFirstSetWinner = 'player2'
-    }
-    
-    if (prediction.firstSetWinner === actualFirstSetWinner) {
-      totalPoints += 3
     }
   }
 

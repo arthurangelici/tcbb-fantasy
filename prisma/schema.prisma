@@ -114,7 +114,6 @@ model Prediction {
   // Prediction fields
   winner           String? // player1 or player2
   setScores        Json?   // Array of predicted set scores: [{ p1: number, p2: number, tiebreak?: string }]
-  firstSetWinner   String? // player1 or player2
 
   // Points earned (calculated after match)
   pointsEarned Int @default(0)
