@@ -94,8 +94,7 @@ export async function POST() {
         for (const prediction of match.predictions) {
           const predictionData = {
             winner: prediction.winner,
-            setScores: prediction.setScores as { p1: number; p2: number; tiebreak?: string }[] | null,
-            firstSetWinner: prediction.firstSetWinner
+            setScores: prediction.setScores as { p1: number; p2: number; tiebreak?: string }[] | null
           };
 
           const points = calculatePredictionPoints(predictionData, matchForScoring);
