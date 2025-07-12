@@ -16,7 +16,13 @@ export async function GET(request: NextRequest) {
       include: {
         predictions: {
           include: {
-            match: true
+            match: {
+              include: {
+                player1: true,
+                player2: true,
+                winner: true
+              }
+            }
           }
         },
         tournamentBets: true
@@ -31,7 +37,14 @@ export async function GET(request: NextRequest) {
       category?: string | null;
       predictions: { 
         pointsEarned?: number; 
-        match: { category: string; status: string }; 
+        winner?: string | null;
+        match: { 
+          category: string; 
+          status: string; 
+          player1: { id: string };
+          player2: { id: string };
+          winner?: { id: string } | null;
+        }; 
         updatedAt: Date;
       }[]; 
       tournamentBets: { 
@@ -54,18 +67,19 @@ export async function GET(request: NextRequest) {
       }
 
       const predictionsByCategory = {
-        general: { correct: 0, total: 0 },
-        A: { correct: 0, total: 0 },
-        B: { correct: 0, total: 0 },
-        C: { correct: 0, total: 0 },
-        ATP: { correct: 0, total: 0 },
-        RANKING_TCBB: { correct: 0, total: 0 }
+        general: { correct: 0, total: 0, winnerCorrect: 0 },
+        A: { correct: 0, total: 0, winnerCorrect: 0 },
+        B: { correct: 0, total: 0, winnerCorrect: 0 },
+        C: { correct: 0, total: 0, winnerCorrect: 0 },
+        ATP: { correct: 0, total: 0, winnerCorrect: 0 },
+        RANKING_TCBB: { correct: 0, total: 0, winnerCorrect: 0 }
       }
 
       // Calculate predictions statistics and category-specific points
       user.predictions.forEach((prediction) => {
         const matchCategory = prediction.match.category
         const points = prediction.pointsEarned || 0; // Ensure points is a number
+        const isFinished = prediction.match.status === 'FINISHED'
 
         // Add to general stats (but don't add to general points - use stored user.points)
         predictionsByCategory.general.total++
@@ -73,12 +87,28 @@ export async function GET(request: NextRequest) {
           predictionsByCategory.general.correct++
         }
         
+        // Check if winner prediction was correct for finished matches
+        if (isFinished && prediction.match.winner && prediction.winner) {
+          const actualWinnerKey = prediction.match.winner.id === prediction.match.player1.id ? 'player1' : 'player2'
+          if (prediction.winner === actualWinnerKey) {
+            predictionsByCategory.general.winnerCorrect++
+          }
+        }
+        
         // Add to category-specific stats and points
         if (matchCategory === 'A' || matchCategory === 'B' || matchCategory === 'C' || matchCategory === 'ATP' || matchCategory === 'RANKING_TCBB') {
           (pointsByCategory as Record<string, number>)[matchCategory] += points;
-          (predictionsByCategory as Record<string, { correct: number; total: number }>)[matchCategory].total++
+          (predictionsByCategory as Record<string, { correct: number; total: number; winnerCorrect: number }>)[matchCategory].total++
           if (points > 0) {
-            (predictionsByCategory as Record<string, { correct: number; total: number }>)[matchCategory].correct++
+            (predictionsByCategory as Record<string, { correct: number; total: number; winnerCorrect: number }>)[matchCategory].correct++
+          }
+          
+          // Check winner prediction for this category
+          if (isFinished && prediction.match.winner && prediction.winner) {
+            const actualWinnerKey = prediction.match.winner.id === prediction.match.player1.id ? 'player1' : 'player2'
+            if (prediction.winner === actualWinnerKey) {
+              (predictionsByCategory as Record<string, { correct: number; total: number; winnerCorrect: number }>)[matchCategory].winnerCorrect++
+            }
           }
         }
       })
@@ -150,10 +180,20 @@ export async function GET(request: NextRequest) {
       finalRanking.reduce((acc: number, p: any) => acc + (p.pointsByCategory[categoryKey] || 0), 0) / totalPlayers
     ) : 0
     
-    const averageSuccessRate = totalPlayers > 0 ? Number((
+    const averageWinnerSuccessRate = totalPlayers > 0 ? Number((
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       finalRanking.reduce((acc: number, p: any) => {
-        const predictions = p.predictionsByCategory[categoryKey] || { correct: 0, total: 0 }
+        const predictions = p.predictionsByCategory[categoryKey] || { correct: 0, total: 0, winnerCorrect: 0 }
+        const finishedPredictions = predictions.total // Approximation - we don't track finished vs total separately by category
+        const rate = finishedPredictions > 0 ? (predictions.winnerCorrect / finishedPredictions) * 100 : 0
+        return acc + rate
+      }, 0) / totalPlayers
+    ).toFixed(1)) : 0
+    
+    const averageOverallSuccessRate = totalPlayers > 0 ? Number((
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      finalRanking.reduce((acc: number, p: any) => {
+        const predictions = p.predictionsByCategory[categoryKey] || { correct: 0, total: 0, winnerCorrect: 0 }
         const rate = predictions.total > 0 ? (predictions.correct / predictions.total) * 100 : 0
         return acc + rate
       }, 0) / totalPlayers
@@ -162,7 +202,8 @@ export async function GET(request: NextRequest) {
     const stats = {
       totalPlayers,
       averagePoints,
-      averageSuccessRate,
+      averageSuccessRate: averageOverallSuccessRate,
+      averageWinnerSuccessRate: averageWinnerSuccessRate,
       topPlayer: finalRanking[0] || null
     }
 

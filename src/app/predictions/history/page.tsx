@@ -16,6 +16,8 @@ interface PredictionHistory {
   result: string
   points: number
   correct: boolean | null
+  winnerCorrect: boolean | null
+  exactScoreCorrect: boolean | null
   type: string
   category: string
   isFinished: boolean
@@ -53,8 +55,8 @@ export default function PredictionHistoryPage() {
 
   const totalPoints = predictionHistory.reduce((sum, pred) => sum + pred.points, 0)
   const finishedPredictions = predictionHistory.filter(pred => pred.isFinished)
-  const correctPredictions = finishedPredictions.filter(pred => pred.correct).length
-  const successRate = finishedPredictions.length > 0 ? (correctPredictions / finishedPredictions.length * 100).toFixed(1) : 0
+  const correctWinnerPredictions = finishedPredictions.filter(pred => pred.winnerCorrect).length
+  const winnerSuccessRate = finishedPredictions.length > 0 ? (correctWinnerPredictions / finishedPredictions.length * 100).toFixed(1) : 0
 
   if (loading) {
     return (
@@ -113,8 +115,8 @@ export default function PredictionHistoryPage() {
           <CardContent className="flex items-center p-6">
             <Trophy className="h-8 w-8 text-blue-600 mr-4" />
             <div>
-              <div className="text-2xl font-bold">{correctPredictions}</div>
-              <p className="text-sm text-gray-600">Acertos</p>
+              <div className="text-2xl font-bold">{correctWinnerPredictions}</div>
+              <p className="text-sm text-gray-600">Acertos de Vencedores</p>
             </div>
           </CardContent>
         </Card>
@@ -122,8 +124,8 @@ export default function PredictionHistoryPage() {
           <CardContent className="flex items-center p-6">
             <Clock className="h-8 w-8 text-purple-600 mr-4" />
             <div>
-              <div className="text-2xl font-bold">{successRate}%</div>
-              <p className="text-sm text-gray-600">Taxa de Sucesso</p>
+              <div className="text-2xl font-bold">{winnerSuccessRate}%</div>
+              <p className="text-sm text-gray-600">Taxa de Acerto de Vencedores</p>
             </div>
           </CardContent>
         </Card>
@@ -146,9 +148,18 @@ export default function PredictionHistoryPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {prediction.isFinished ? (
-                      <Badge variant={prediction.correct ? "default" : "destructive"}>
-                        {prediction.correct ? "Acertou" : "Errou"}
-                      </Badge>
+                      <div className="flex items-center gap-1">
+                        {prediction.winnerCorrect !== null && (
+                          <Badge variant={prediction.winnerCorrect ? "default" : "destructive"}>
+                            {prediction.winnerCorrect ? "✓ Vencedor" : "✗ Vencedor"}
+                          </Badge>
+                        )}
+                        {prediction.exactScoreCorrect !== null && (
+                          <Badge variant={prediction.exactScoreCorrect ? "default" : "destructive"}>
+                            {prediction.exactScoreCorrect ? "✓ Placar" : "✗ Placar"}
+                          </Badge>
+                        )}
+                      </div>
                     ) : (
                       <Badge variant="secondary">
                         Aguardando jogo

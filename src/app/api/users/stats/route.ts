@@ -45,7 +45,25 @@ export async function GET() {
     const totalPredictions = user.predictions.length
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const correctPredictions = user.predictions.filter((p: any) => p.pointsEarned > 0).length
-    const successRate = totalPredictions > 0 ? (correctPredictions / totalPredictions) * 100 : 0
+    
+    // Calculate winner success rate (predictions where winner was correct)
+    let correctWinnerPredictions = 0
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const finishedPredictions = user.predictions.filter((p: any) => p.match.status === 'FINISHED')
+    
+    for (const prediction of finishedPredictions) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((prediction as any).match.winner && prediction.winner) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const actualWinnerKey = (prediction as any).match.winner.id === (prediction as any).match.player1.id ? 'player1' : 'player2'
+        if (prediction.winner === actualWinnerKey) {
+          correctWinnerPredictions++
+        }
+      }
+    }
+    
+    const winnerSuccessRate = finishedPredictions.length > 0 ? (correctWinnerPredictions / finishedPredictions.length) * 100 : 0
+    const overallSuccessRate = totalPredictions > 0 ? (correctPredictions / totalPredictions) * 100 : 0
     
     // Calculate streak (consecutive correct predictions)
     let streak = 0
@@ -144,8 +162,10 @@ export async function GET() {
       totalPoints: user.points,
       position,
       correctPredictions,
+      correctWinnerPredictions,
       totalPredictions,
-      successRate: Number(successRate.toFixed(1)),
+      successRate: Number(overallSuccessRate.toFixed(1)),
+      winnerSuccessRate: Number(winnerSuccessRate.toFixed(1)),
       streak,
       upcomingMatches,
       recentMatches: formattedRecentMatches

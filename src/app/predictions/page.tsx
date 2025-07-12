@@ -404,8 +404,10 @@ export default function PredictionsPage() {
   const [userStats, setUserStats] = useState({
     totalPredictions: 0,
     correctPredictions: 0,
+    correctWinnerPredictions: 0,
     pointsEarned: 0,
-    successRate: 0
+    successRate: 0,
+    winnerSuccessRate: 0
   })
 
   const fetchPredictionsData = useCallback(async () => {
@@ -434,8 +436,10 @@ export default function PredictionsPage() {
         setUserStats({
           totalPredictions: data.totalPredictions,
           correctPredictions: data.correctPredictions,
+          correctWinnerPredictions: data.correctWinnerPredictions,
           pointsEarned: data.totalPoints,
-          successRate: data.successRate
+          successRate: data.successRate,
+          winnerSuccessRate: data.winnerSuccessRate
         })
       }
     } catch (error) {
@@ -502,8 +506,8 @@ export default function PredictionsPage() {
           <CardContent className="flex items-center p-6">
             <Trophy className="h-8 w-8 text-blue-600 mr-4" />
             <div>
-              <div className="text-2xl font-bold">{userStats.correctPredictions}</div>
-              <p className="text-sm text-gray-600">Acertos</p>
+              <div className="text-2xl font-bold">{userStats.correctWinnerPredictions}</div>
+              <p className="text-sm text-gray-600">Acertos de Vencedores</p>
             </div>
           </CardContent>
         </Card>
@@ -520,8 +524,8 @@ export default function PredictionsPage() {
           <CardContent className="flex items-center p-6">
             <TrendingUp className="h-8 w-8 text-purple-600 mr-4" />
             <div>
-              <div className="text-2xl font-bold">{userStats.successRate}%</div>
-              <p className="text-sm text-gray-600">Taxa de Acerto</p>
+              <div className="text-2xl font-bold">{userStats.winnerSuccessRate}%</div>
+              <p className="text-sm text-gray-600">Taxa de Acerto de Vencedores</p>
             </div>
           </CardContent>
         </Card>

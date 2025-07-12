@@ -21,12 +21,12 @@ interface PlayerData {
     RANKING_TCBB: number;
   };
   predictionsByCategory: {
-    general: { correct: number; total: number };
-    A: { correct: number; total: number };
-    B: { correct: number; total: number };
-    C: { correct: number; total: number };
-    ATP: { correct: number; total: number };
-    RANKING_TCBB: { correct: number; total: number };
+    general: { correct: number; total: number; winnerCorrect: number };
+    A: { correct: number; total: number; winnerCorrect: number };
+    B: { correct: number; total: number; winnerCorrect: number };
+    C: { correct: number; total: number; winnerCorrect: number };
+    ATP: { correct: number; total: number; winnerCorrect: number };
+    RANKING_TCBB: { correct: number; total: number; winnerCorrect: number };
   };
   streak: number;
   position?: number;
@@ -38,6 +38,7 @@ interface RankingStats {
   totalPlayers: number;
   averagePoints: number;
   averageSuccessRate: number;
+  averageWinnerSuccessRate: number;
   topPlayer: PlayerData | null;
 }
 
@@ -86,8 +87,8 @@ function PlayerRankingCard({
   categoryFilter?: 'general' | 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB'
 }) {
   const points = player.pointsByCategory[categoryFilter] || 0
-  const predictions = player.predictionsByCategory[categoryFilter] || { correct: 0, total: 0 }
-  const successRate = predictions.total > 0 ? (predictions.correct / predictions.total) * 100 : 0
+  const predictions = player.predictionsByCategory[categoryFilter] || { correct: 0, total: 0, winnerCorrect: 0 }
+  const winnerSuccessRate = predictions.total > 0 ? (predictions.winnerCorrect / predictions.total) * 100 : 0
 
   return (
     <Card className={`${currentUser ? 'border-emerald-200 bg-emerald-50' : ''}`}>
@@ -112,7 +113,7 @@ function PlayerRankingCard({
                 <div className="flex items-center space-x-1">
                   <Target className="h-4 w-4 text-gray-400" />
                   <span className="text-sm text-gray-600">
-                    {predictions.correct}/{predictions.total} ({successRate.toFixed(1)}%)
+                    {predictions.winnerCorrect}/{predictions.total} ({winnerSuccessRate.toFixed(1)}%)
                   </span>
                 </div>
                 {player.streak > 0 && (
@@ -324,8 +325,8 @@ export default function RankingPage() {
             <CardContent className="flex items-center p-6">
               <Target className="h-8 w-8 text-purple-600 mr-4" />
               <div>
-                <div className="text-2xl font-bold">{stats.averageSuccessRate}%</div>
-                <p className="text-sm text-gray-600">Taxa Média</p>
+                <div className="text-2xl font-bold">{stats.averageWinnerSuccessRate}%</div>
+                <p className="text-sm text-gray-600">Taxa Média de Vencedores</p>
               </div>
             </CardContent>
           </Card>

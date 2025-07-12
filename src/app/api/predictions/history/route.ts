@@ -94,16 +94,75 @@ export async function GET() {
         actualWinner = 'Aguardando jogo'
       }
 
+      // Calculate breakdown of what was correct
+      let winnerCorrect = false
+      let exactScoreCorrect = false
+      
+      if (isFinished && match.winner) {
+        // Check if winner prediction was correct
+        const actualWinnerKey = match.winner.id === match.player1.id ? 'player1' : 'player2'
+        winnerCorrect = prediction.winner === actualWinnerKey
+        
+        // Check if exact score prediction was correct
+        if (prediction.setScores && match.setScores && Array.isArray(prediction.setScores) && Array.isArray(match.setScores)) {
+          let perfectMatch = true
+          const minLength = Math.min(prediction.setScores.length, match.setScores.length)
+          
+          for (let i = 0; i < minLength; i++) {
+            const predSet = prediction.setScores[i] as { p1: number; p2: number; tiebreak?: string }
+            const actualSet = match.setScores[i] as { p1: number; p2: number; tiebreak?: string }
+            
+            if (predSet.p1 !== actualSet.p1 || predSet.p2 !== actualSet.p2) {
+              perfectMatch = false
+              break
+            }
+            
+            // Check tiebreak prediction
+            if (predSet.tiebreak && actualSet.tiebreak) {
+              if (predSet.tiebreak !== actualSet.tiebreak) {
+                perfectMatch = false
+                break
+              }
+            } else if (predSet.tiebreak || actualSet.tiebreak) {
+              perfectMatch = false
+              break
+            }
+          }
+          
+          exactScoreCorrect = perfectMatch && prediction.setScores.length === match.setScores.length
+        }
+      }
+
       // Determine prediction type and details
       let predictionDetails = predictedWinner
       let predictionType = 'Winner'
       
       if (prediction.setScores && Array.isArray(prediction.setScores) && prediction.setScores.length > 0) {
         // Format set scores for display
-        const setScoreArray = prediction.setScores as { p1: number; p2: number }[]
-        const formattedScores = setScoreArray.map(set => `${set.p1}-${set.p2}`).join(', ')
-        predictionDetails = formattedScores
-        predictionType = 'Exact Score'
+        const setScoreArray = prediction.setScores as { p1: number; p2: number; tiebreak?: string }[]
+        const formattedScores = setScoreArray.map(set => {
+          let scoreStr = `${set.p1}-${set.p2}`
+          if (set.tiebreak) {
+            scoreStr += ` (${set.tiebreak})`
+          }
+          return scoreStr
+        }).join(', ')
+        predictionDetails = `${predictedWinner} • ${formattedScores}`
+        predictionType = 'Winner + Exact Score'
+      }
+
+      // Format the actual match result
+      let matchResult = actualWinner
+      if (isFinished && match.setScores && Array.isArray(match.setScores)) {
+        const setScoreArray = match.setScores as { p1: number; p2: number; tiebreak?: string }[]
+        const formattedScores = setScoreArray.map(set => {
+          let scoreStr = `${set.p1}-${set.p2}`
+          if (set.tiebreak) {
+            scoreStr += ` (${set.tiebreak})`
+          }
+          return scoreStr
+        }).join(', ')
+        matchResult = `${actualWinner} • ${formattedScores}`
       }
 
       return {
@@ -113,9 +172,11 @@ export async function GET() {
         player2: match.player2.name,
         date: match.finishedAt?.toISOString().split('T')[0] || match.scheduledAt?.toISOString().split('T')[0] || 'N/A',
         prediction: predictionDetails,
-        result: actualWinner,
+        result: matchResult,
         points: prediction.pointsEarned,
         correct: isFinished ? prediction.pointsEarned > 0 : null, // null for unfinished matches
+        winnerCorrect: isFinished ? winnerCorrect : null,
+        exactScoreCorrect: isFinished ? exactScoreCorrect : null,
         type: predictionType,
         category: match.category,
         isFinished: isFinished
