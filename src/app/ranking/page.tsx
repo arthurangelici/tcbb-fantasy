@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Trophy, TrendingUp, Target, Star, Medal, Crown, Award, RefreshCw } from "lucide-react"
+import { formatPointsCompact } from "@/lib/utils"
 
 interface PlayerData {
   id: string;
@@ -94,40 +95,40 @@ function PlayerRankingCard({
 
   return (
     <Card className={`${currentUser ? 'border-emerald-200 bg-emerald-50' : ''}`}>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
+            <div className="flex items-center space-x-2 flex-shrink-0">
               {getRankingIcon(player.position || 0)}
-              <span className="text-2xl font-bold">{player.position || 0}</span>
+              <span className="text-xl sm:text-2xl font-bold">{player.position || 0}</span>
             </div>
             
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2">
-                <h3 className="font-semibold text-lg">{player.name}</h3>
+                <h3 className="font-semibold text-base sm:text-lg truncate">{player.name}</h3>
                 {currentUser && (
-                  <Badge variant="default" className="text-xs">
+                  <Badge variant="default" className="text-xs flex-shrink-0">
                     Você
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center space-x-4 mt-2">
-                <div className="flex items-center space-x-1">
-                  <Target className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2">
+                <div className="flex items-center space-x-1 flex-shrink-0">
+                  <Target className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+                  <span className="text-xs sm:text-sm text-gray-600">
                     {predictions.winnerCorrect}/{predictions.total} ({winnerSuccessRate.toFixed(1)}%)
                   </span>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <TrendingUp className="h-4 w-4 text-indigo-400" />
-                  <span className="text-sm text-gray-600">
+                <div className="flex items-center space-x-1 flex-shrink-0">
+                  <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-400" />
+                  <span className="text-xs sm:text-sm text-gray-600">
                     {predictions.exactScoreCorrect}/{predictions.total} ({exactScoreSuccessRate.toFixed(1)}%)
                   </span>
                 </div>
                 {player.streak > 0 && (
-                  <div className="flex items-center space-x-1">
-                    <Star className="h-4 w-4 text-orange-500" />
-                    <span className="text-sm text-orange-600">
+                  <div className="flex items-center space-x-1 flex-shrink-0">
+                    <Star className="h-3 w-3 sm:h-4 sm:w-4 text-orange-500" />
+                    <span className="text-xs sm:text-sm text-orange-600">
                       {player.streak} seguidos
                     </span>
                   </div>
@@ -136,11 +137,11 @@ function PlayerRankingCard({
             </div>
           </div>
 
-          <div className="text-right">
-            <div className="text-2xl font-bold text-emerald-600">
-              {points}
+          <div className="text-right flex-shrink-0 min-w-0 max-w-[120px] sm:max-w-none">
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-emerald-600 break-words" title={points.toString()}>
+              {points >= 100000 ? formatPointsCompact(points) : points.toLocaleString('pt-BR')}
             </div>
-            <div className="text-sm text-gray-600">pontos</div>
+            <div className="text-xs sm:text-sm text-gray-600">pontos</div>
             <div className={`flex items-center justify-end space-x-1 mt-1 ${getTrendColor(player.trend || 'stable')}`}>
               {getTrendIcon(player.trend || 'stable')}
               <span className="text-xs">
