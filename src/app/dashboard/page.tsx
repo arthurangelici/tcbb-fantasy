@@ -13,9 +13,11 @@ interface UserStats {
   position: number
   correctPredictions: number
   correctWinnerPredictions: number
+  correctExactScorePredictions: number
   totalPredictions: number
   successRate: number
   winnerSuccessRate: number
+  exactScoreSuccessRate: number
   streak: number
   upcomingMatches: number
   recentMatches: Array<{
@@ -146,7 +148,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Pontos</CardTitle>
@@ -182,6 +184,19 @@ export default function DashboardPage() {
             <div className="text-2xl font-bold">{stats.winnerSuccessRate}%</div>
             <p className="text-xs text-purple-100">
               {stats.correctWinnerPredictions} vencedores corretos
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Acertos de Placares Exatos</CardTitle>
+            <TrendingUp className="h-4 w-4" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.exactScoreSuccessRate}%</div>
+            <p className="text-xs text-orange-100">
+              {stats.correctExactScorePredictions} placares corretos
             </p>
           </CardContent>
         </Card>

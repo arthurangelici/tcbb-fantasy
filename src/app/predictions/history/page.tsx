@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trophy, Target, Clock } from "lucide-react"
+import { Trophy, Target, Clock, TrendingUp } from "lucide-react"
 
 interface PredictionHistory {
   id: string
@@ -56,7 +56,9 @@ export default function PredictionHistoryPage() {
   const totalPoints = predictionHistory.reduce((sum, pred) => sum + pred.points, 0)
   const finishedPredictions = predictionHistory.filter(pred => pred.isFinished)
   const correctWinnerPredictions = finishedPredictions.filter(pred => pred.winnerCorrect).length
+  const correctExactScorePredictions = finishedPredictions.filter(pred => pred.exactScoreCorrect).length
   const winnerSuccessRate = finishedPredictions.length > 0 ? (correctWinnerPredictions / finishedPredictions.length * 100).toFixed(1) : 0
+  const exactScoreSuccessRate = finishedPredictions.length > 0 ? (correctExactScorePredictions / finishedPredictions.length * 100).toFixed(1) : 0
 
   if (loading) {
     return (
@@ -101,7 +103,7 @@ export default function PredictionHistoryPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <Card>
           <CardContent className="flex items-center p-6">
             <Target className="h-8 w-8 text-emerald-600 mr-4" />
@@ -126,6 +128,15 @@ export default function PredictionHistoryPage() {
             <div>
               <div className="text-2xl font-bold">{winnerSuccessRate}%</div>
               <p className="text-sm text-gray-600">Taxa de Acerto de Vencedores</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center p-6">
+            <TrendingUp className="h-8 w-8 text-indigo-600 mr-4" />
+            <div>
+              <div className="text-2xl font-bold">{exactScoreSuccessRate}%</div>
+              <p className="text-sm text-gray-600">Taxa de Acerto de Placares Exatos</p>
             </div>
           </CardContent>
         </Card>
