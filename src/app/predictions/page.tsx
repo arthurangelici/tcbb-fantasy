@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Trophy, Target, Clock, TrendingUp, Star } from "lucide-react"
+import { Trophy, Target, Clock, TrendingUp, Star, Check, Edit } from "lucide-react"
+import { toast } from "react-hot-toast"
 
 interface Match {
   id: number
@@ -49,6 +50,8 @@ function MatchPredictionCard({ match }: { match: Match }) {
     setScores: [{ p1: 0, p2: 0, tiebreak: '' }]
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [hasSaved, setHasSaved] = useState(false)
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null)
 
   // Load existing prediction when component mounts or match changes
   useEffect(() => {
@@ -57,6 +60,7 @@ function MatchPredictionCard({ match }: { match: Match }) {
         winner: match.existingPrediction.winner || undefined,
         setScores: match.existingPrediction.setScores || [{ p1: 0, p2: 0, tiebreak: '' }]
       })
+      setHasSaved(true) // Mark as saved if there's an existing prediction
     }
   }, [match])
 
@@ -88,14 +92,43 @@ function MatchPredictionCard({ match }: { match: Match }) {
       })
 
       if (response.ok) {
-        console.log('Prediction saved successfully')
+        setHasSaved(true)
+        setLastSaveTime(new Date())
+        toast.success('Palpite salvo com sucesso!')
+      } else {
+        toast.error('Erro ao salvar palpite. Tente novamente.')
       }
     } catch (error) {
       console.error('Error saving prediction:', error)
+      toast.error('Erro ao salvar palpite. Tente novamente.')
     } finally {
       setIsSubmitting(false)
     }
   }
+
+  // Check if prediction has been modified since last save
+  const hasUnsavedChanges = () => {
+    if (!match.existingPrediction) return true
+    
+    const existingPrediction = match.existingPrediction
+    return (
+      prediction.winner !== existingPrediction.winner ||
+      JSON.stringify(prediction.setScores) !== JSON.stringify(existingPrediction.setScores)
+    )
+  }
+
+  const isModified = hasUnsavedChanges()
+  const canSave = prediction.winner && 
+    prediction.setScores && 
+    prediction.setScores.length >= 1 &&
+    prediction.setScores.every(set => set.p1 >= 0 && set.p2 >= 0 && (set.p1 > 0 || set.p2 > 0))
+
+  // Update hasSaved state when prediction changes
+  useEffect(() => {
+    if (hasSaved && isModified) {
+      setHasSaved(false)
+    }
+  }, [prediction, hasSaved, isModified])
 
   return (
     <Card className="border-l-4 border-l-emerald-500">
@@ -247,19 +280,54 @@ function MatchPredictionCard({ match }: { match: Match }) {
         </div>
 
         {/* Submit */}
-        <Button 
-          onClick={handleSubmit}
-          disabled={
-            isSubmitting || 
-            !prediction.winner || 
-            !prediction.setScores || 
-            prediction.setScores.length < 1 ||
-            !prediction.setScores.every(set => set.p1 >= 0 && set.p2 >= 0 && (set.p1 > 0 || set.p2 > 0))
-          }
-          className="w-full"
-        >
-          {isSubmitting ? 'Salvando...' : 'Salvar Palpites'}
-        </Button>
+        <div className="space-y-3">
+          <Button 
+            onClick={handleSubmit}
+            disabled={isSubmitting || !canSave}
+            className={`w-full transition-colors ${
+              hasSaved && !isModified 
+                ? 'bg-emerald-600 hover:bg-emerald-700' 
+                : isModified 
+                  ? 'bg-blue-600 hover:bg-blue-700' 
+                  : ''
+            }`}
+          >
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Salvando...
+              </>
+            ) : hasSaved && !isModified ? (
+              <>
+                <Check className="w-4 h-4 mr-2" />
+                Palpite Salvo
+              </>
+            ) : match.existingPrediction ? (
+              <>
+                <Edit className="w-4 h-4 mr-2" />
+                Editar Palpite
+              </>
+            ) : (
+              'Salvar Palpite'
+            )}
+          </Button>
+          
+          {/* Save status indicator */}
+          {hasSaved && lastSaveTime && (
+            <div className="text-center text-sm text-emerald-600">
+              <Check className="w-4 h-4 inline mr-1" />
+              Salvo em {lastSaveTime.toLocaleTimeString()}
+            </div>
+          )}
+          
+          {/* Show unsaved changes indicator */}
+          {match.existingPrediction && isModified && (
+            <div className="text-center text-sm text-orange-600">
+              <Edit className="w-4 h-4 inline mr-1" />
+              Você tem alterações não salvas
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
