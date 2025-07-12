@@ -38,12 +38,14 @@ export async function GET(request: NextRequest) {
       predictions: { 
         pointsEarned?: number; 
         winner?: string | null;
+        setScores?: unknown; // JSON field from database
         match: { 
           category: string; 
           status: string; 
           player1: { id: string };
           player2: { id: string };
           winner?: { id: string } | null;
+          setScores?: unknown; // JSON field from database
         }; 
         updatedAt: Date;
       }[]; 
@@ -67,12 +69,12 @@ export async function GET(request: NextRequest) {
       }
 
       const predictionsByCategory = {
-        general: { correct: 0, total: 0, winnerCorrect: 0 },
-        A: { correct: 0, total: 0, winnerCorrect: 0 },
-        B: { correct: 0, total: 0, winnerCorrect: 0 },
-        C: { correct: 0, total: 0, winnerCorrect: 0 },
-        ATP: { correct: 0, total: 0, winnerCorrect: 0 },
-        RANKING_TCBB: { correct: 0, total: 0, winnerCorrect: 0 }
+        general: { correct: 0, total: 0, winnerCorrect: 0, exactScoreCorrect: 0 },
+        A: { correct: 0, total: 0, winnerCorrect: 0, exactScoreCorrect: 0 },
+        B: { correct: 0, total: 0, winnerCorrect: 0, exactScoreCorrect: 0 },
+        C: { correct: 0, total: 0, winnerCorrect: 0, exactScoreCorrect: 0 },
+        ATP: { correct: 0, total: 0, winnerCorrect: 0, exactScoreCorrect: 0 },
+        RANKING_TCBB: { correct: 0, total: 0, winnerCorrect: 0, exactScoreCorrect: 0 }
       }
 
       // Calculate predictions statistics and category-specific points
@@ -95,19 +97,81 @@ export async function GET(request: NextRequest) {
           }
         }
         
+        // Check if exact score prediction was correct for finished matches
+        if (isFinished && prediction.setScores && prediction.match.setScores && Array.isArray(prediction.setScores) && Array.isArray(prediction.match.setScores)) {
+          let perfectMatch = true
+          const minLength = Math.min(prediction.setScores.length, prediction.match.setScores.length)
+          
+          for (let i = 0; i < minLength; i++) {
+            const predSet = prediction.setScores[i] as { p1: number; p2: number; tiebreak?: string }
+            const actualSet = prediction.match.setScores[i] as { p1: number; p2: number; tiebreak?: string }
+            
+            if (predSet.p1 !== actualSet.p1 || predSet.p2 !== actualSet.p2) {
+              perfectMatch = false
+              break
+            }
+            
+            // Check tiebreak prediction
+            if (predSet.tiebreak && actualSet.tiebreak) {
+              if (predSet.tiebreak !== actualSet.tiebreak) {
+                perfectMatch = false
+                break
+              }
+            } else if (predSet.tiebreak || actualSet.tiebreak) {
+              perfectMatch = false
+              break
+            }
+          }
+          
+          if (perfectMatch && prediction.setScores.length === prediction.match.setScores.length) {
+            predictionsByCategory.general.exactScoreCorrect++
+          }
+        }
+        
         // Add to category-specific stats and points
         if (matchCategory === 'A' || matchCategory === 'B' || matchCategory === 'C' || matchCategory === 'ATP' || matchCategory === 'RANKING_TCBB') {
           (pointsByCategory as Record<string, number>)[matchCategory] += points;
-          (predictionsByCategory as Record<string, { correct: number; total: number; winnerCorrect: number }>)[matchCategory].total++
+          (predictionsByCategory as Record<string, { correct: number; total: number; winnerCorrect: number; exactScoreCorrect: number }>)[matchCategory].total++
           if (points > 0) {
-            (predictionsByCategory as Record<string, { correct: number; total: number; winnerCorrect: number }>)[matchCategory].correct++
+            (predictionsByCategory as Record<string, { correct: number; total: number; winnerCorrect: number; exactScoreCorrect: number }>)[matchCategory].correct++
           }
           
           // Check winner prediction for this category
           if (isFinished && prediction.match.winner && prediction.winner) {
             const actualWinnerKey = prediction.match.winner.id === prediction.match.player1.id ? 'player1' : 'player2'
             if (prediction.winner === actualWinnerKey) {
-              (predictionsByCategory as Record<string, { correct: number; total: number; winnerCorrect: number }>)[matchCategory].winnerCorrect++
+              (predictionsByCategory as Record<string, { correct: number; total: number; winnerCorrect: number; exactScoreCorrect: number }>)[matchCategory].winnerCorrect++
+            }
+          }
+          
+          // Check exact score prediction for this category
+          if (isFinished && prediction.setScores && prediction.match.setScores && Array.isArray(prediction.setScores) && Array.isArray(prediction.match.setScores)) {
+            let perfectMatch = true
+            const minLength = Math.min(prediction.setScores.length, prediction.match.setScores.length)
+            
+            for (let i = 0; i < minLength; i++) {
+              const predSet = prediction.setScores[i] as { p1: number; p2: number; tiebreak?: string }
+              const actualSet = prediction.match.setScores[i] as { p1: number; p2: number; tiebreak?: string }
+              
+              if (predSet.p1 !== actualSet.p1 || predSet.p2 !== actualSet.p2) {
+                perfectMatch = false
+                break
+              }
+              
+              // Check tiebreak prediction
+              if (predSet.tiebreak && actualSet.tiebreak) {
+                if (predSet.tiebreak !== actualSet.tiebreak) {
+                  perfectMatch = false
+                  break
+                }
+              } else if (predSet.tiebreak || actualSet.tiebreak) {
+                perfectMatch = false
+                break
+              }
+            }
+            
+            if (perfectMatch && prediction.setScores.length === prediction.match.setScores.length) {
+              (predictionsByCategory as Record<string, { correct: number; total: number; winnerCorrect: number; exactScoreCorrect: number }>)[matchCategory].exactScoreCorrect++
             }
           }
         }
@@ -154,7 +218,7 @@ export async function GET(request: NextRequest) {
       email: string;
       category: string;
       pointsByCategory: Record<string, number>;
-      predictionsByCategory: Record<string, { correct: number; total: number }>;
+      predictionsByCategory: Record<string, { correct: number; total: number; winnerCorrect: number; exactScoreCorrect: number }>;
       streak: number;
     };
     
@@ -183,9 +247,19 @@ export async function GET(request: NextRequest) {
     const averageWinnerSuccessRate = totalPlayers > 0 ? Number((
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       finalRanking.reduce((acc: number, p: any) => {
-        const predictions = p.predictionsByCategory[categoryKey] || { correct: 0, total: 0, winnerCorrect: 0 }
+        const predictions = p.predictionsByCategory[categoryKey] || { correct: 0, total: 0, winnerCorrect: 0, exactScoreCorrect: 0 }
         const finishedPredictions = predictions.total // Approximation - we don't track finished vs total separately by category
         const rate = finishedPredictions > 0 ? (predictions.winnerCorrect / finishedPredictions) * 100 : 0
+        return acc + rate
+      }, 0) / totalPlayers
+    ).toFixed(1)) : 0
+    
+    const averageExactScoreSuccessRate = totalPlayers > 0 ? Number((
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      finalRanking.reduce((acc: number, p: any) => {
+        const predictions = p.predictionsByCategory[categoryKey] || { correct: 0, total: 0, winnerCorrect: 0, exactScoreCorrect: 0 }
+        const finishedPredictions = predictions.total // Approximation - we don't track finished vs total separately by category
+        const rate = finishedPredictions > 0 ? (predictions.exactScoreCorrect / finishedPredictions) * 100 : 0
         return acc + rate
       }, 0) / totalPlayers
     ).toFixed(1)) : 0
@@ -193,7 +267,7 @@ export async function GET(request: NextRequest) {
     const averageOverallSuccessRate = totalPlayers > 0 ? Number((
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       finalRanking.reduce((acc: number, p: any) => {
-        const predictions = p.predictionsByCategory[categoryKey] || { correct: 0, total: 0, winnerCorrect: 0 }
+        const predictions = p.predictionsByCategory[categoryKey] || { correct: 0, total: 0, winnerCorrect: 0, exactScoreCorrect: 0 }
         const rate = predictions.total > 0 ? (predictions.correct / predictions.total) * 100 : 0
         return acc + rate
       }, 0) / totalPlayers
@@ -204,6 +278,7 @@ export async function GET(request: NextRequest) {
       averagePoints,
       averageSuccessRate: averageOverallSuccessRate,
       averageWinnerSuccessRate: averageWinnerSuccessRate,
+      averageExactScoreSuccessRate: averageExactScoreSuccessRate,
       topPlayer: finalRanking[0] || null
     }
 

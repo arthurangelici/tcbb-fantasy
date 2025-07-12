@@ -21,12 +21,12 @@ interface PlayerData {
     RANKING_TCBB: number;
   };
   predictionsByCategory: {
-    general: { correct: number; total: number; winnerCorrect: number };
-    A: { correct: number; total: number; winnerCorrect: number };
-    B: { correct: number; total: number; winnerCorrect: number };
-    C: { correct: number; total: number; winnerCorrect: number };
-    ATP: { correct: number; total: number; winnerCorrect: number };
-    RANKING_TCBB: { correct: number; total: number; winnerCorrect: number };
+    general: { correct: number; total: number; winnerCorrect: number; exactScoreCorrect: number };
+    A: { correct: number; total: number; winnerCorrect: number; exactScoreCorrect: number };
+    B: { correct: number; total: number; winnerCorrect: number; exactScoreCorrect: number };
+    C: { correct: number; total: number; winnerCorrect: number; exactScoreCorrect: number };
+    ATP: { correct: number; total: number; winnerCorrect: number; exactScoreCorrect: number };
+    RANKING_TCBB: { correct: number; total: number; winnerCorrect: number; exactScoreCorrect: number };
   };
   streak: number;
   position?: number;
@@ -39,6 +39,7 @@ interface RankingStats {
   averagePoints: number;
   averageSuccessRate: number;
   averageWinnerSuccessRate: number;
+  averageExactScoreSuccessRate: number;
   topPlayer: PlayerData | null;
 }
 
@@ -87,8 +88,9 @@ function PlayerRankingCard({
   categoryFilter?: 'general' | 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB'
 }) {
   const points = player.pointsByCategory[categoryFilter] || 0
-  const predictions = player.predictionsByCategory[categoryFilter] || { correct: 0, total: 0, winnerCorrect: 0 }
+  const predictions = player.predictionsByCategory[categoryFilter] || { correct: 0, total: 0, winnerCorrect: 0, exactScoreCorrect: 0 }
   const winnerSuccessRate = predictions.total > 0 ? (predictions.winnerCorrect / predictions.total) * 100 : 0
+  const exactScoreSuccessRate = predictions.total > 0 ? (predictions.exactScoreCorrect / predictions.total) * 100 : 0
 
   return (
     <Card className={`${currentUser ? 'border-emerald-200 bg-emerald-50' : ''}`}>
@@ -114,6 +116,12 @@ function PlayerRankingCard({
                   <Target className="h-4 w-4 text-gray-400" />
                   <span className="text-sm text-gray-600">
                     {predictions.winnerCorrect}/{predictions.total} ({winnerSuccessRate.toFixed(1)}%)
+                  </span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <TrendingUp className="h-4 w-4 text-indigo-400" />
+                  <span className="text-sm text-gray-600">
+                    {predictions.exactScoreCorrect}/{predictions.total} ({exactScoreSuccessRate.toFixed(1)}%)
                   </span>
                 </div>
                 {player.streak > 0 && (
@@ -302,7 +310,7 @@ export default function RankingPage() {
 
       {/* Stats Cards */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
           <Card>
             <CardContent className="flex items-center p-6">
               <Trophy className="h-8 w-8 text-emerald-600 mr-4" />
@@ -327,6 +335,15 @@ export default function RankingPage() {
               <div>
                 <div className="text-2xl font-bold">{stats.averageWinnerSuccessRate}%</div>
                 <p className="text-sm text-gray-600">Taxa Média de Vencedores</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex items-center p-6">
+              <TrendingUp className="h-8 w-8 text-indigo-600 mr-4" />
+              <div>
+                <div className="text-2xl font-bold">{stats.averageExactScoreSuccessRate}%</div>
+                <p className="text-sm text-gray-600">Taxa Média de Placares Exatos</p>
               </div>
             </CardContent>
           </Card>

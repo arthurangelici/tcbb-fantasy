@@ -54,6 +54,7 @@ export async function GET() {
     
     // Calculate winner success rate (predictions where winner was correct)
     let correctWinnerPredictions = 0
+    let correctExactScorePredictions = 0
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const finishedPredictions = user.predictions.filter((p: any) => p.match.status === 'FINISHED')
     
@@ -66,9 +67,45 @@ export async function GET() {
           correctWinnerPredictions++
         }
       }
+      
+      // Check if exact score prediction was correct
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (prediction.setScores && (prediction as any).match.setScores && Array.isArray(prediction.setScores) && Array.isArray((prediction as any).match.setScores)) {
+        let perfectMatch = true
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const minLength = Math.min(prediction.setScores.length, (prediction as any).match.setScores.length)
+        
+        for (let i = 0; i < minLength; i++) {
+          const predSet = prediction.setScores[i] as { p1: number; p2: number; tiebreak?: string }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const actualSet = (prediction as any).match.setScores[i] as { p1: number; p2: number; tiebreak?: string }
+          
+          if (predSet.p1 !== actualSet.p1 || predSet.p2 !== actualSet.p2) {
+            perfectMatch = false
+            break
+          }
+          
+          // Check tiebreak prediction
+          if (predSet.tiebreak && actualSet.tiebreak) {
+            if (predSet.tiebreak !== actualSet.tiebreak) {
+              perfectMatch = false
+              break
+            }
+          } else if (predSet.tiebreak || actualSet.tiebreak) {
+            perfectMatch = false
+            break
+          }
+        }
+        
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (perfectMatch && prediction.setScores.length === (prediction as any).match.setScores.length) {
+          correctExactScorePredictions++
+        }
+      }
     }
     
     const winnerSuccessRate = finishedPredictions.length > 0 ? (correctWinnerPredictions / finishedPredictions.length) * 100 : 0
+    const exactScoreSuccessRate = finishedPredictions.length > 0 ? (correctExactScorePredictions / finishedPredictions.length) * 100 : 0
     const overallSuccessRate = totalPredictions > 0 ? (correctPredictions / totalPredictions) * 100 : 0
     
     // Calculate streak (consecutive correct predictions)
@@ -170,9 +207,11 @@ export async function GET() {
       position,
       correctPredictions,
       correctWinnerPredictions,
+      correctExactScorePredictions,
       totalPredictions,
       successRate: Number(overallSuccessRate.toFixed(1)),
       winnerSuccessRate: Number(winnerSuccessRate.toFixed(1)),
+      exactScoreSuccessRate: Number(exactScoreSuccessRate.toFixed(1)),
       streak,
       upcomingMatches,
       recentMatches: formattedRecentMatches

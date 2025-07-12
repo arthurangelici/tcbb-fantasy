@@ -473,9 +473,11 @@ export default function PredictionsPage() {
     totalPredictions: 0,
     correctPredictions: 0,
     correctWinnerPredictions: 0,
+    correctExactScorePredictions: 0,
     pointsEarned: 0,
     successRate: 0,
-    winnerSuccessRate: 0
+    winnerSuccessRate: 0,
+    exactScoreSuccessRate: 0
   })
 
   const fetchPredictionsData = useCallback(async () => {
@@ -505,9 +507,11 @@ export default function PredictionsPage() {
           totalPredictions: data.totalPredictions,
           correctPredictions: data.correctPredictions,
           correctWinnerPredictions: data.correctWinnerPredictions,
+          correctExactScorePredictions: data.correctExactScorePredictions,
           pointsEarned: data.totalPoints,
           successRate: data.successRate,
-          winnerSuccessRate: data.winnerSuccessRate
+          winnerSuccessRate: data.winnerSuccessRate,
+          exactScoreSuccessRate: data.exactScoreSuccessRate
         })
       }
     } catch (error) {
@@ -560,7 +564,7 @@ export default function PredictionsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
         <Card>
           <CardContent className="flex items-center p-6">
             <Target className="h-8 w-8 text-emerald-600 mr-4" />
@@ -594,6 +598,15 @@ export default function PredictionsPage() {
             <div>
               <div className="text-2xl font-bold">{userStats.winnerSuccessRate}%</div>
               <p className="text-sm text-gray-600">Taxa de Acerto de Vencedores</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center p-6">
+            <TrendingUp className="h-8 w-8 text-indigo-600 mr-4" />
+            <div>
+              <div className="text-2xl font-bold">{userStats.exactScoreSuccessRate}%</div>
+              <p className="text-sm text-gray-600">Taxa de Acerto de Placares Exatos</p>
             </div>
           </CardContent>
         </Card>
