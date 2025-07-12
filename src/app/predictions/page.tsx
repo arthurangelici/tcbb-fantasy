@@ -22,7 +22,6 @@ interface Match {
   existingPrediction?: {
     winner?: string | null
     setScores?: { p1: number; p2: number }[] | null
-    firstSetWinner?: string | null
   }
 }
 
@@ -42,7 +41,6 @@ interface TournamentBet {
 interface Prediction {
   winner?: string
   setScores?: { p1: number; p2: number; tiebreak?: string }[]
-  firstSetWinner?: string
 }
 
 function MatchPredictionCard({ match }: { match: Match }) {
@@ -57,8 +55,7 @@ function MatchPredictionCard({ match }: { match: Match }) {
     if (match.existingPrediction) {
       setPrediction({
         winner: match.existingPrediction.winner || undefined,
-        setScores: match.existingPrediction.setScores || [{ p1: 0, p2: 0, tiebreak: '' }],
-        firstSetWinner: match.existingPrediction.firstSetWinner || undefined
+        setScores: match.existingPrediction.setScores || [{ p1: 0, p2: 0, tiebreak: '' }]
       })
     }
   }, [match])
@@ -245,27 +242,6 @@ function MatchPredictionCard({ match }: { match: Match }) {
                   {prediction.setScores.length === 1 ? 'Adicionar 2º Set' : 'Adicionar 3º Set'}
                 </Button>
               )}
-            </div>
-          </div>
-
-          {/* First Set Winner */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">
-              Vencedor do 1º set (3 pontos)
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={prediction.firstSetWinner === 'player1' ? 'default' : 'outline'}
-                onClick={() => setPrediction(prev => ({ ...prev, firstSetWinner: 'player1' }))}
-              >
-                {match.player1.name}
-              </Button>
-              <Button
-                variant={prediction.firstSetWinner === 'player2' ? 'default' : 'outline'}
-                onClick={() => setPrediction(prev => ({ ...prev, firstSetWinner: 'player2' }))}
-              >
-                {match.player2.name}
-              </Button>
             </div>
           </div>
         </div>

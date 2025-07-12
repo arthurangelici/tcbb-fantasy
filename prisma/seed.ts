@@ -293,8 +293,7 @@ async function main() {
           matchId: match.id,
           winner: Math.random() > 0.5 ? 'player1' : 'player2',
           setScores: setScores,
-          firstSetWinner: Math.random() > 0.5 ? 'player1' : 'player2',
-          pointsEarned: Math.floor(Math.random() * 25),
+          pointsEarned: Math.floor(Math.random() * 21), // Max 20 points now (5 + 15)
         },
       })
     }
