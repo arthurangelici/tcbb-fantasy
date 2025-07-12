@@ -12,8 +12,10 @@ interface UserStats {
   totalPoints: number
   position: number
   correctPredictions: number
+  correctWinnerPredictions: number
   totalPredictions: number
   successRate: number
+  winnerSuccessRate: number
   streak: number
   upcomingMatches: number
   recentMatches: Array<{
@@ -173,13 +175,13 @@ export default function DashboardPage() {
 
         <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Acerto</CardTitle>
+            <CardTitle className="text-sm font-medium">Acertos de Vencedores</CardTitle>
             <Target className="h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.successRate}%</div>
+            <div className="text-2xl font-bold">{stats.winnerSuccessRate}%</div>
             <p className="text-xs text-purple-100">
-              {stats.correctPredictions} de {stats.totalPredictions} palpites
+              {stats.correctWinnerPredictions} vencedores corretos
             </p>
           </CardContent>
         </Card>
