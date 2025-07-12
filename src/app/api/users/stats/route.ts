@@ -31,7 +31,13 @@ export async function GET() {
       include: {
         predictions: {
           include: {
-            match: true
+            match: {
+              include: {
+                player1: true,
+                player2: true,
+                winner: true
+              }
+            }
           }
         }
       }
@@ -101,6 +107,7 @@ export async function GET() {
       include: {
         player1: true,
         player2: true,
+        winner: true,
         predictions: {
           where: { userId: user.id }
         }
