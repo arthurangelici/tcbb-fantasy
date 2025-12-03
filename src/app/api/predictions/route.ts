@@ -110,12 +110,10 @@ export async function GET(request: NextRequest) {
       matchesByCategory[cat].push(formattedMatch)
     })
 
-    // Get tournament bet types with points
+    // Get tournament bet types with points (only Champion and Runner-up)
     const tournamentBets = [
       { type: 'CHAMPION', label: 'Campeão', points: 25, description: 'Quem será o campeão da categoria?' },
-      { type: 'RUNNER_UP', label: 'Vice-campeão', points: 15, description: 'Quem chegará à final mas não ganhará?' },
-      { type: 'SEMIFINALIST', label: 'Semifinalista', points: 10, description: 'Escolha um jogador que chegará às semifinais' },
-      { type: 'QUARTERFINALIST', label: 'Quartas de Final', points: 5, description: 'Escolha um jogador que chegará às quartas' }
+      { type: 'RUNNER_UP', label: 'Vice-campeão', points: 15, description: 'Quem chegará à final mas não ganhará?' }
     ]
 
     // Get categories with description

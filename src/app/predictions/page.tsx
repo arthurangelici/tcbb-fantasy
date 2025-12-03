@@ -340,10 +340,15 @@ function TournamentBetsTab({
   categories: Category[], 
   tournamentBets: TournamentBet[] 
 }) {
+  const { data: session } = useSession()
   const [selectedBets, setSelectedBets] = useState<Record<string, string>>({})
+  const [savedBets, setSavedBets] = useState<Record<string, string>>({})
   const [selectedCategory, setSelectedCategory] = useState<string>('A')
   const [players, setPlayers] = useState<string[]>([])
   const [loadingPlayers, setLoadingPlayers] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [loadingBets, setLoadingBets] = useState(true)
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null)
 
   // Ensure we have all categories including ATP
   const allCategories = [
@@ -351,6 +356,36 @@ function TournamentBetsTab({
     // Add ATP if not already present
     ...(categories.find(cat => cat.id === 'ATP') ? [] : [{ id: 'ATP', name: 'ATP', description: 'Categoria ATP' }])
   ]
+
+  // Fetch existing bets on mount
+  useEffect(() => {
+    const fetchExistingBets = async () => {
+      if (!session?.user) return
+      
+      try {
+        setLoadingBets(true)
+        const response = await fetch('/api/tournament-bets')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.bets) {
+            // Transform bets into selectedBets format
+            const existingBets: Record<string, string> = {}
+            Object.entries(data.bets).forEach(([key, value]) => {
+              existingBets[key] = (value as { playerName: string }).playerName
+            })
+            setSelectedBets(existingBets)
+            setSavedBets(existingBets)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching existing bets:', error)
+      } finally {
+        setLoadingBets(false)
+      }
+    }
+
+    fetchExistingBets()
+  }, [session])
 
   useEffect(() => {
     // Fetch players for the selected category
@@ -375,6 +410,83 @@ function TournamentBetsTab({
 
     fetchPlayers()
   }, [selectedCategory])
+
+  const handleSaveBets = async () => {
+    if (!session?.user) {
+      toast.error('Você precisa estar logado para salvar palpites')
+      return
+    }
+
+    // Get bets for current category
+    const categoryBets: Record<string, string> = {}
+    tournamentBets.forEach((bet) => {
+      const betKey = `${bet.type}_${selectedCategory}`
+      if (selectedBets[betKey]) {
+        categoryBets[bet.type] = selectedBets[betKey]
+      }
+    })
+
+    // Check if at least one bet is selected
+    if (Object.keys(categoryBets).length === 0) {
+      toast.error('Selecione pelo menos um jogador para salvar')
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const response = await fetch('/api/tournament-bets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          category: selectedCategory,
+          bets: categoryBets
+        })
+      })
+
+      if (response.ok) {
+        // Update saved bets state
+        const newSavedBets = { ...savedBets }
+        tournamentBets.forEach((bet) => {
+          const betKey = `${bet.type}_${selectedCategory}`
+          if (selectedBets[betKey]) {
+            newSavedBets[betKey] = selectedBets[betKey]
+          }
+        })
+        setSavedBets(newSavedBets)
+        setLastSaveTime(new Date())
+        toast.success('Palpites salvos com sucesso!')
+      } else {
+        const errorData = await response.json()
+        toast.error(errorData.error || 'Erro ao salvar palpites')
+      }
+    } catch (error) {
+      console.error('Error saving bets:', error)
+      toast.error('Erro ao salvar palpites. Tente novamente.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Check if current category has unsaved changes
+  const hasUnsavedChanges = () => {
+    return tournamentBets.some((bet) => {
+      const betKey = `${bet.type}_${selectedCategory}`
+      return selectedBets[betKey] !== savedBets[betKey]
+    })
+  }
+
+  // Check if current category has any selections
+  const hasSelections = () => {
+    return tournamentBets.some((bet) => {
+      const betKey = `${bet.type}_${selectedCategory}`
+      return selectedBets[betKey] && selectedBets[betKey] !== ''
+    })
+  }
+
+  const isUnsaved = hasUnsavedChanges()
+  const hasBets = hasSelections()
 
   return (
     <div className="space-y-6">
@@ -416,48 +528,112 @@ function TournamentBetsTab({
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {tournamentBets.map((bet) => {
-          const betKey = `${bet.type}_${selectedCategory}`
-          
-          return (
-            <Card key={betKey}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{bet.label} - Cat. {selectedCategory}</CardTitle>
-                  <Badge variant="secondary">{bet.points} pontos</Badge>
-                </div>
-                <CardDescription>{bet.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <select 
-                  className="w-full p-2 border rounded-md"
-                  value={selectedBets[betKey] || ''}
-                  onChange={(e) => setSelectedBets(prev => ({ ...prev, [betKey]: e.target.value }))}
-                  disabled={loadingPlayers || players.length === 0}
-                >
-                  <option value="">
-                    {loadingPlayers 
-                      ? 'Carregando jogadores...' 
-                      : players.length === 0 
-                        ? 'Nenhum jogador encontrado para esta categoria'
-                        : 'Selecione um jogador...'}
-                  </option>
-                  {!loadingPlayers && players.map((player) => (
-                    <option key={player} value={player}>{player}</option>
-                  ))}
-                </select>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+      {loadingBets ? (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando palpites...</p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {tournamentBets.map((bet) => {
+              const betKey = `${bet.type}_${selectedCategory}`
+              const isBetSaved = savedBets[betKey] && savedBets[betKey] === selectedBets[betKey]
+              
+              return (
+                <Card key={betKey} className={isBetSaved ? 'border-emerald-300' : ''}>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">{bet.label} - Cat. {selectedCategory}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        {isBetSaved && (
+                          <Badge variant="default" className="bg-emerald-500">
+                            <Check className="w-3 h-3 mr-1" />
+                            Salvo
+                          </Badge>
+                        )}
+                        <Badge variant="secondary">{bet.points} pontos</Badge>
+                      </div>
+                    </div>
+                    <CardDescription>{bet.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <select 
+                      className="w-full p-2 border rounded-md"
+                      value={selectedBets[betKey] || ''}
+                      onChange={(e) => setSelectedBets(prev => ({ ...prev, [betKey]: e.target.value }))}
+                      disabled={loadingPlayers || players.length === 0}
+                    >
+                      <option value="">
+                        {loadingPlayers 
+                          ? 'Carregando jogadores...' 
+                          : players.length === 0 
+                            ? 'Nenhum jogador encontrado para esta categoria'
+                            : 'Selecione um jogador...'}
+                      </option>
+                      {!loadingPlayers && players.map((player) => (
+                        <option key={player} value={player}>{player}</option>
+                      ))}
+                    </select>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
 
-      <div className="text-center">
-        <Button size="lg">
-          Salvar Palpites de Categoria {selectedCategory}
-        </Button>
-      </div>
+          <div className="space-y-3">
+            <div className="text-center">
+              <Button 
+                size="lg" 
+                onClick={handleSaveBets}
+                disabled={isSaving || !hasBets}
+                className={`transition-colors ${
+                  !isUnsaved && hasBets
+                    ? 'bg-emerald-600 hover:bg-emerald-700' 
+                    : isUnsaved 
+                      ? 'bg-blue-600 hover:bg-blue-700' 
+                      : ''
+                }`}
+              >
+                {isSaving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Salvando...
+                  </>
+                ) : !isUnsaved && hasBets ? (
+                  <>
+                    <Check className="w-4 h-4 mr-2" />
+                    Palpites Salvos - Categoria {selectedCategory}
+                  </>
+                ) : isUnsaved ? (
+                  <>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Salvar Alterações - Categoria {selectedCategory}
+                  </>
+                ) : (
+                  `Salvar Palpites - Categoria ${selectedCategory}`
+                )}
+              </Button>
+            </div>
+
+            {/* Save status indicator */}
+            {lastSaveTime && !isUnsaved && hasBets && (
+              <div className="text-center text-sm text-emerald-600">
+                <Check className="w-4 h-4 inline mr-1" />
+                Salvo em {lastSaveTime.toLocaleTimeString()}
+              </div>
+            )}
+
+            {/* Unsaved changes indicator */}
+            {isUnsaved && hasBets && (
+              <div className="text-center text-sm text-orange-600">
+                <Edit className="w-4 h-4 inline mr-1" />
+                Você tem alterações não salvas
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }
