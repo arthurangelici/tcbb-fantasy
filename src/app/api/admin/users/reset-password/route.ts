@@ -16,7 +16,7 @@ type SessionWithUser = {
   expires: string
 }
 
-// Generate a random 8-digit password
+// Generate a random 8-character alphanumeric password
 function generateRandomPassword(): string {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   let password = ''

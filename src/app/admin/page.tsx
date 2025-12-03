@@ -696,7 +696,7 @@ function UserManagement() {
   }
 
   const handleResetPassword = async (userId: string) => {
-    if (!window.confirm('Tem certeza que deseja resetar a senha deste usuário? Uma nova senha aleatória de 8 dígitos será gerada.')) {
+    if (!window.confirm('Tem certeza que deseja resetar a senha deste usuário? Uma nova senha aleatória de 8 caracteres será gerada.')) {
       return
     }
 
@@ -752,7 +752,18 @@ function UserManagement() {
                 <p className="text-sm text-gray-600">{user.email}</p>
                 {newPassword && newPassword.userId === user.id && (
                   <div className="mt-2 p-2 bg-green-100 border border-green-300 rounded">
-                    <p className="text-sm font-semibold text-green-800">Nova senha:</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-green-800">Nova senha:</p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-2 text-green-700 hover:text-green-900"
+                        onClick={() => setNewPassword(null)}
+                        title="Fechar"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <p className="text-lg font-mono text-green-900 select-all">{newPassword.password}</p>
                     <p className="text-xs text-green-700 mt-1">Copie e compartilhe com o usuário</p>
                   </div>
