@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { calculatePredictionPoints } from '@/lib/utils'
+import { calculatePredictionPoints, getTournamentBetPoints } from '@/lib/utils'
 
 // Type for the session with user data
 type SessionWithUser = {
@@ -413,18 +413,98 @@ export async function PUT(request: NextRequest) {
             });
             
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const totalPoints = userPredictions.reduce((sum: number, pred: any) => sum + pred.pointsEarned, 0);
+            const predictionPoints = userPredictions.reduce((sum: number, pred: any) => sum + pred.pointsEarned, 0);
             
-            // Update user's total points
+            // Calculate total points from tournament bets
+            const userTournamentBets = await tx.tournamentBet.findMany({
+              where: { userId }
+            });
+            
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const tournamentBetPoints = userTournamentBets.reduce((sum: number, bet: any) => sum + bet.pointsEarned, 0);
+            
+            // Update user's total points (predictions + tournament bets)
             await tx.user.update({
               where: { id: userId },
-              data: { points: totalPoints }
+              data: { points: predictionPoints + tournamentBetPoints }
+            });
+          }
+
+          // 5. If this is a FINAL match, calculate and award tournament bet points (CHAMPION and RUNNER_UP)
+          if (match.round === 'FINAL') {
+            const championId = updateData.winnerId; // Winner of the final is the champion
+            const runnerUpId = winner === 'PLAYER1' ? match.player2Id : match.player1Id; // Loser of the final is the runner-up
+            const matchCategory = match.category;
+
+            // Find all tournament bets for this category
+            const tournamentBets = await tx.tournamentBet.findMany({
+              where: {
+                category: matchCategory,
+                type: { in: ['CHAMPION', 'RUNNER_UP'] }
+              }
+            });
+
+            const affectedTournamentBetUserIds = new Set<string>();
+
+            for (const bet of tournamentBets) {
+              let pointsToAward = 0;
+
+              if (bet.type === 'CHAMPION' && bet.playerId === championId) {
+                pointsToAward = getTournamentBetPoints('CHAMPION');
+              } else if (bet.type === 'RUNNER_UP' && bet.playerId === runnerUpId) {
+                pointsToAward = getTournamentBetPoints('RUNNER_UP');
+              }
+
+              // Update the tournament bet with earned points
+              await tx.tournamentBet.update({
+                where: { id: bet.id },
+                data: { pointsEarned: pointsToAward }
+              });
+
+              if (pointsToAward > 0) {
+                affectedTournamentBetUserIds.add(bet.userId);
+              }
+            }
+
+            // Recalculate total points for users affected by tournament bet updates
+            const affectedUserIdsArray = Array.from(affectedTournamentBetUserIds);
+            for (const userId of affectedUserIdsArray) {
+              // Calculate total points from all predictions
+              const userPredictions = await tx.prediction.findMany({
+                where: { userId }
+              });
+              
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const predictionPoints = userPredictions.reduce((sum: number, pred: any) => sum + pred.pointsEarned, 0);
+              
+              // Calculate total points from tournament bets
+              const userTournamentBets = await tx.tournamentBet.findMany({
+                where: { userId }
+              });
+              
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const tournamentBetPoints = userTournamentBets.reduce((sum: number, bet: any) => sum + bet.pointsEarned, 0);
+              
+              // Update user's total points (predictions + tournament bets)
+              await tx.user.update({
+                where: { id: userId },
+                data: { points: predictionPoints + tournamentBetPoints }
+              });
+            }
+
+            console.log('Tournament bet points calculation:', {
+              matchId: matchId,
+              matchCategory: matchCategory,
+              championId: championId,
+              runnerUpId: runnerUpId,
+              totalBetsProcessed: tournamentBets.length,
+              usersAffected: affectedTournamentBetUserIds.size
             });
           }
         }
       }
 
-      // 5. Return the fully updated match data with players
+      // 6. Return the fully updated match data with players
       return tx.match.findUnique({
         where: { id: matchId },
         include: { player1: true, player2: true }
@@ -498,12 +578,19 @@ export async function DELETE(request: NextRequest) {
           where: { userId }
         });
         
-        const totalPoints = userPredictions.reduce((sum: number, pred: { pointsEarned: number }) => sum + (pred.pointsEarned || 0), 0);
+        const predictionPoints = userPredictions.reduce((sum: number, pred: { pointsEarned: number }) => sum + (pred.pointsEarned || 0), 0);
         
-        // Update user's total points
+        // Also include tournament bet points
+        const userTournamentBets = await tx.tournamentBet.findMany({
+          where: { userId }
+        });
+        
+        const tournamentBetPoints = userTournamentBets.reduce((sum: number, bet: { pointsEarned: number }) => sum + (bet.pointsEarned || 0), 0);
+        
+        // Update user's total points (predictions + tournament bets)
         await tx.user.update({
           where: { id: userId },
-          data: { points: totalPoints }
+          data: { points: predictionPoints + tournamentBetPoints }
         });
       }
     });

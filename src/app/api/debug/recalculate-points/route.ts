@@ -119,11 +119,18 @@ export async function POST() {
           where: { userId: userRecord.id }
         });
 
-        const totalPoints = userPredictions.reduce((sum: number, pred: { pointsEarned: number }) => sum + pred.pointsEarned, 0);
+        const predictionPoints = userPredictions.reduce((sum: number, pred: { pointsEarned: number }) => sum + pred.pointsEarned, 0);
+
+        // Also include tournament bet points
+        const userTournamentBets = await tx.tournamentBet.findMany({
+          where: { userId: userRecord.id }
+        });
+
+        const tournamentBetPoints = userTournamentBets.reduce((sum: number, bet: { pointsEarned: number }) => sum + bet.pointsEarned, 0);
 
         await tx.user.update({
           where: { id: userRecord.id },
-          data: { points: totalPoints }
+          data: { points: predictionPoints + tournamentBetPoints }
         });
       }
     });
