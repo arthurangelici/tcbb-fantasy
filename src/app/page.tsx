@@ -125,13 +125,13 @@ export default function Home() {
             <div className="text-2xl font-bold text-blue-600">15pts</div>
             <div className="text-sm text-gray-600">Placar Exato</div>
           </div>
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">8pts</div>
-            <div className="text-sm text-gray-600">3º Set</div>
-          </div>
           <div className="bg-orange-50 p-4 rounded-lg">
             <div className="text-2xl font-bold text-orange-600">25pts</div>
             <div className="text-sm text-gray-600">Campeão</div>
+          </div>
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <div className="text-2xl font-bold text-purple-600">15pts</div>
+            <div className="text-sm text-gray-600">Vice Campeão</div>
           </div>
         </div>
       </div>
