@@ -37,7 +37,8 @@ import {
   Trash2, // Adicionar ícone de lixeira
   Edit,   // Adicionar ícone de edição
   Save,   // Adicionar ícone de salvar
-  XCircle // Adicionar ícone de cancelar
+  XCircle, // Adicionar ícone de cancelar
+  KeyRound // Adicionar ícone de chave para reset de senha
 } from "lucide-react"
 import { toast } from "react-hot-toast"
 
@@ -64,7 +65,7 @@ interface Match {
 }
 
 interface User {
-  id: number
+  id: string
   name: string
   email: string
   role: string
@@ -652,6 +653,8 @@ function MatchManagement() {
 function UserManagement() {
   const [users, setUsers] = useState < User[] > ([])
   const [loading, setLoading] = useState(true)
+  const [resettingPassword, setResettingPassword] = useState < string | null > (null)
+  const [newPassword, setNewPassword] = useState < { userId: string; password: string } | null > (null)
 
   useEffect(() => {
     fetchUsers()
@@ -664,7 +667,7 @@ function UserManagement() {
       if (response.ok) {
         const data = await response.json()
         const formattedUsers = data.ranking.map((user: {
-            id: number;
+            id: string;
             name: string;
             email: string;
             pointsByCategory: {
@@ -692,6 +695,37 @@ function UserManagement() {
     }
   }
 
+  const handleResetPassword = async (userId: string) => {
+    if (!window.confirm('Tem certeza que deseja resetar a senha deste usuário? Uma nova senha aleatória de 8 dígitos será gerada.')) {
+      return
+    }
+
+    try {
+      setResettingPassword(userId)
+      const response = await fetch('/api/admin/users/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setNewPassword({ userId, password: data.newPassword })
+        toast.success('Senha resetada com sucesso!')
+      } else {
+        const errorData = await response.json()
+        toast.error(`Erro ao resetar senha: ${errorData.error}`)
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error)
+      toast.error('Ocorreu um erro ao resetar a senha.')
+    } finally {
+      setResettingPassword(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="animate-pulse space-y-4">
@@ -716,10 +750,29 @@ function UserManagement() {
               <div>
                 <h3 className="font-semibold">{user.name}</h3>
                 <p className="text-sm text-gray-600">{user.email}</p>
+                {newPassword && newPassword.userId === user.id && (
+                  <div className="mt-2 p-2 bg-green-100 border border-green-300 rounded">
+                    <p className="text-sm font-semibold text-green-800">Nova senha:</p>
+                    <p className="text-lg font-mono text-green-900 select-all">{newPassword.password}</p>
+                    <p className="text-xs text-green-700 mt-1">Copie e compartilhe com o usuário</p>
+                  </div>
+                )}
               </div>
-              <div className="text-right">
-                <div className="text-lg font-bold">{user.points} pontos</div>
-                <div className="text-sm text-gray-600">{user.predictions} palpites</div>
+              <div className="flex items-center space-x-4">
+                <div className="text-right">
+                  <div className="text-lg font-bold">{user.points} pontos</div>
+                  <div className="text-sm text-gray-600">{user.predictions} palpites</div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleResetPassword(user.id)}
+                  disabled={resettingPassword === user.id}
+                  title="Resetar senha"
+                >
+                  <KeyRound className="h-4 w-4 mr-1" />
+                  {resettingPassword === user.id ? 'Resetando...' : 'Resetar Senha'}
+                </Button>
               </div>
             </CardContent>
           </Card>
