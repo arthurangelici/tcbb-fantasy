@@ -48,7 +48,7 @@ interface SetScore {
 }
 
 interface Match {
-  id: number
+  id: string
   player1: string
   player2: string
   round: string
@@ -74,8 +74,8 @@ interface User {
 
 function MatchManagement() {
   const [matches, setMatches] = useState < Match[] > ([])
-  const [selectedMatch, setSelectedMatch] = useState < number | null > (null)
-  const [editingMatch, setEditingMatch] = useState < number | null > (null)
+  const [selectedMatch, setSelectedMatch] = useState < string | null > (null)
+  const [editingMatch, setEditingMatch] = useState < string | null > (null)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<'ALL' | 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB'>('ALL')
   const [loading, setLoading] = useState(true)
@@ -147,7 +147,7 @@ function MatchManagement() {
     }
   }
 
-  const handleEditMatch = (matchId: number, player1: string, player2: string) => {
+  const handleEditMatch = (matchId: string, player1: string, player2: string) => {
     setEditingMatch(matchId)
     setMatchEdit({
       player1,
@@ -155,7 +155,7 @@ function MatchManagement() {
     })
   }
 
-  const handleSaveMatchEdit = async (matchId: number) => {
+  const handleSaveMatchEdit = async (matchId: string) => {
     try {
       const response = await fetch('/api/admin/matches', {
         method: 'PUT',
@@ -215,7 +215,7 @@ function MatchManagement() {
     }
   }
 
-  const handleSaveResult = async (matchId: number) => {
+  const handleSaveResult = async (matchId: string) => {
     // Filtra sets vazios antes de enviar
     const validSets = matchResult.sets.filter(s => s.p1 !== '' || s.p2 !== '');
     if (validSets.length === 0) {
@@ -257,7 +257,7 @@ function MatchManagement() {
     }
   }
 
-  const handleDeleteMatch = async (matchId: number) => {
+  const handleDeleteMatch = async (matchId: string) => {
     if (window.confirm('Tem certeza que deseja excluir esta partida? Esta ação não pode ser desfeita.')) {
       try {
         const response = await fetch(`/api/admin/matches?id=${matchId}`, {
@@ -266,14 +266,15 @@ function MatchManagement() {
 
         if (response.ok) {
           setMatches(prev => prev.filter(match => match.id !== matchId));
+          toast.success("Partida excluída com sucesso!");
         } else {
           const errorData = await response.json();
           console.error('Error deleting match:', errorData.error);
-          alert(`Erro ao excluir partida: ${errorData.error}`);
+          toast.error(`Erro ao excluir partida: ${errorData.error}`);
         }
       } catch (error) {
         console.error('Error deleting match:', error);
-        alert('Ocorreu um erro de rede ao tentar excluir a partida.');
+        toast.error('Ocorreu um erro de rede ao tentar excluir a partida.');
       }
     }
   };
