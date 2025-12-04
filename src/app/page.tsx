@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Trophy, Users, Target, BarChart3 } from "lucide-react";
+import { Trophy, Target, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { HomeStats } from "@/components/home-stats";
 
 export default function Home() {
   return (
@@ -42,17 +43,7 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        <Card className="text-center">
-          <CardHeader>
-            <Users className="h-12 w-12 text-blue-600 mx-auto mb-2" />
-            <CardTitle>35 Jogadores</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CardDescription>
-              Conheça todos os participantes do torneio e suas estatísticas
-            </CardDescription>
-          </CardContent>
-        </Card>
+        <HomeStats />
 
         <Card className="text-center">
           <CardHeader>
