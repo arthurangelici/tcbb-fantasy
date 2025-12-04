@@ -112,7 +112,7 @@ export default function PredictionHistoryPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         <Card>
           <CardContent className="flex items-center p-6">
             <Target className="h-8 w-8 text-emerald-600 mr-4" />
