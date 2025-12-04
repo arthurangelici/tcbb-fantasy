@@ -553,26 +553,55 @@ export async function DELETE(request: NextRequest) {
     // Use transaction to ensure atomicity
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await prisma.$transaction(async (tx: any) => {
+      // 0. Get the match to check if it's a FINAL match
+      const matchToDelete = await tx.match.findUnique({
+        where: { id: matchId }
+      });
+
+      if (!matchToDelete) {
+        throw new Error('Match not found');
+      }
+
       // 1. Get all predictions for this match to know which users to update
       const predictions = await tx.prediction.findMany({
         where: { matchId: matchId },
         select: { userId: true }
       });
 
-      const affectedUserIds = Array.from(new Set(predictions.map((p: { userId: string }) => p.userId)));
+      const affectedUserIds = new Set(predictions.map((p: { userId: string }) => p.userId));
 
-      // 2. Delete all predictions for this match
+      // 2. If this is a FINAL match, reset tournament bet points for CHAMPION and RUNNER_UP in this category
+      if (matchToDelete.round === 'FINAL') {
+        const tournamentBets = await tx.tournamentBet.findMany({
+          where: {
+            category: matchToDelete.category,
+            type: { in: ['CHAMPION', 'RUNNER_UP'] }
+          }
+        });
+
+        // Reset all tournament bet points for this category to 0
+        for (const bet of tournamentBets) {
+          await tx.tournamentBet.update({
+            where: { id: bet.id },
+            data: { pointsEarned: 0 }
+          });
+          // Add the user to affected users list
+          affectedUserIds.add(bet.userId);
+        }
+      }
+
+      // 3. Delete all predictions for this match
       await tx.prediction.deleteMany({
         where: { matchId: matchId },
       });
 
-      // 3. Delete the match itself
+      // 4. Delete the match itself
       await tx.match.delete({
         where: { id: matchId },
       });
 
-      // 4. Recalculate total points for all affected users
-      for (const userId of affectedUserIds) {
+      // 5. Recalculate total points for all affected users
+      for (const userId of Array.from(affectedUserIds)) {
         // Calculate total points from remaining predictions
         const userPredictions = await tx.prediction.findMany({
           where: { userId }

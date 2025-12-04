@@ -55,9 +55,13 @@ export async function POST() {
     let totalUpdated = 0;
     let totalPointsAwarded = 0;
     let tournamentBetsUpdated = 0;
+    let tournamentBetsReset = 0;
 
     // Use transaction to ensure consistency
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // First, find all categories that have a finished FINAL match
+      const categoriesWithFinishedFinals = new Set<string>();
+      
       for (const match of finishedMatches) {
         console.log(`Processing match: ${match.player1.name} vs ${match.player2.name}`);
 
@@ -111,6 +115,7 @@ export async function POST() {
 
         // If this is a FINAL match, recalculate tournament bet points (CHAMPION and RUNNER_UP)
         if (match.round === 'FINAL') {
+          categoriesWithFinishedFinals.add(match.category);
           const championId = match.winnerId; // Winner of the final is the champion
           const runnerUpId = match.winnerId === match.player1Id ? match.player2Id : match.player1Id; // Loser of the final is the runner-up
           const matchCategory = match.category;
@@ -150,6 +155,34 @@ export async function POST() {
         }
       }
 
+      // Reset tournament bets for categories without a finished FINAL match
+      const allCategories = ['A', 'B', 'C', 'ATP', 'RANKING_TCBB'] as const;
+      
+      for (const category of allCategories) {
+        if (!categoriesWithFinishedFinals.has(category)) {
+          // Reset all CHAMPION and RUNNER_UP bets for this category to 0 points
+          const betsToReset = await tx.tournamentBet.findMany({
+            where: {
+              category: category as 'A' | 'B' | 'C' | 'ATP' | 'RANKING_TCBB',
+              type: { in: ['CHAMPION', 'RUNNER_UP'] },
+              pointsEarned: { gt: 0 }
+            }
+          });
+          
+          for (const bet of betsToReset) {
+            await tx.tournamentBet.update({
+              where: { id: bet.id },
+              data: { pointsEarned: 0 }
+            });
+            tournamentBetsReset++;
+          }
+          
+          if (betsToReset.length > 0) {
+            console.log(`Reset ${betsToReset.length} tournament bets to 0 for category ${category} (no finished FINAL)`);
+          }
+        }
+      }
+
       // Recalculate total points for all users
       const allUsers = await tx.user.findMany({
         where: { role: 'USER' }
@@ -185,6 +218,7 @@ export async function POST() {
         finishedMatches: finishedMatches.length,
         predictionsUpdated: totalUpdated,
         tournamentBetsUpdated,
+        tournamentBetsReset,
         totalPointsAwarded
       }
     });
