@@ -67,9 +67,11 @@ export async function GET(request: NextRequest) {
         type?: string;
       }[]
     }) => {
-      // Calculate total points from predictions and tournament bets
-      // For CHAMPION and RUNNER_UP bets, only include points if the FINAL match for that category is finished
+      // Calculate total points from predictions
       const predictionPoints = user.predictions.reduce((sum: number, p: { pointsEarned?: number }) => sum + (p.pointsEarned || 0), 0);
+      
+      // Calculate tournament bet points
+      // For CHAMPION and RUNNER_UP bets, only include points if the FINAL match for that category is finished
       const tournamentBetPoints = user.tournamentBets.reduce((sum: number, b: { pointsEarned?: number; category?: string | null; type?: string }) => {
         const points = b.pointsEarned || 0;
         // For CHAMPION and RUNNER_UP bets, only count points if the FINAL match for that category is finished
