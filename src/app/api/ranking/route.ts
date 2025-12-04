@@ -10,6 +10,18 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category') || 'general'
     
+    // Get categories that have a finished FINAL match
+    // This is used to determine which tournament bet points (CHAMPION/RUNNER_UP) should be included
+    const finishedFinalMatches = await prisma.match.findMany({
+      where: {
+        round: 'FINAL',
+        status: 'FINISHED',
+        winnerId: { not: null }
+      },
+      select: { category: true }
+    })
+    const categoriesWithFinishedFinals = new Set<string>(finishedFinalMatches.map(m => m.category))
+    
     // Get all users with their predictions
     const users = await prisma.user.findMany({
       where: { role: 'USER' },
@@ -52,11 +64,26 @@ export async function GET(request: NextRequest) {
       tournamentBets: { 
         pointsEarned?: number; 
         category?: string | null;
+        type?: string;
       }[]
     }) => {
-      // Calculate total points from predictions and tournament bets
-      const calculatedTotalPoints = user.predictions.reduce((sum: number, p: { pointsEarned?: number }) => sum + (p.pointsEarned || 0), 0) +
-                                  user.tournamentBets.reduce((sum: number, b: { pointsEarned?: number }) => sum + (b.pointsEarned || 0), 0);
+      // Calculate total points from predictions
+      const predictionPoints = user.predictions.reduce((sum: number, p: { pointsEarned?: number }) => sum + (p.pointsEarned || 0), 0);
+      
+      // Calculate tournament bet points
+      // For CHAMPION and RUNNER_UP bets, only include points if the FINAL match for that category is finished
+      const tournamentBetPoints = user.tournamentBets.reduce((sum: number, b: { pointsEarned?: number; category?: string | null; type?: string }) => {
+        const points = b.pointsEarned || 0;
+        // For CHAMPION and RUNNER_UP bets, only count points if the FINAL match for that category is finished
+        if (b.type === 'CHAMPION' || b.type === 'RUNNER_UP') {
+          if (b.category && categoriesWithFinishedFinals.has(b.category)) {
+            return sum + points;
+          }
+          return sum; // Don't include points if FINAL is not finished
+        }
+        return sum + points; // Include other bet types normally
+      }, 0);
+      const calculatedTotalPoints = predictionPoints + tournamentBetPoints;
 
       const pointsByCategory = {
         // Always use calculated points to ensure consistency
@@ -178,11 +205,21 @@ export async function GET(request: NextRequest) {
       })
 
       // Add tournament bet points by category
+      // For CHAMPION and RUNNER_UP bets, only include points if the FINAL match for that category is finished
       user.tournamentBets.forEach((bet) => {
         const points = bet.pointsEarned || 0; // Ensure points is a number
 
         if (bet.category && (bet.category === 'A' || bet.category === 'B' || bet.category === 'C' || bet.category === 'ATP' || bet.category === 'RANKING_TCBB')) {
-          (pointsByCategory as Record<string, number>)[bet.category] += points;
+          // For CHAMPION and RUNNER_UP bets, only count points if the FINAL match for that category is finished
+          if (bet.type === 'CHAMPION' || bet.type === 'RUNNER_UP') {
+            if (categoriesWithFinishedFinals.has(bet.category)) {
+              (pointsByCategory as Record<string, number>)[bet.category] += points;
+            }
+            // Don't add points if FINAL is not finished
+          } else {
+            // Include other bet types normally
+            (pointsByCategory as Record<string, number>)[bet.category] += points;
+          }
         }
       })
 

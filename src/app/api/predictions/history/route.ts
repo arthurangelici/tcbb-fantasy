@@ -187,6 +187,18 @@ export async function GET() {
       }
     })
 
+    // Get categories that have a finished FINAL match
+    // This is used to determine if tournament bet points should be shown as finished
+    const finishedFinalMatches = await prisma.match.findMany({
+      where: {
+        round: 'FINAL',
+        status: 'FINISHED',
+        winnerId: { not: null }
+      },
+      select: { category: true }
+    })
+    const categoriesWithFinishedFinals = new Set<string>(finishedFinalMatches.map(m => m.category))
+
     // Get tournament bets (champion/vice-champion) for the user
     const tournamentBets = await prisma.tournamentBet.findMany({
       where: {
@@ -207,7 +219,12 @@ export async function GET() {
         RUNNER_UP: 'Vice-Campeão'
       }
       
-      const isFinished = bet.pointsEarned > 0
+      // Only consider the bet as finished if the FINAL match for that category has been finished
+      const categoryHasFinishedFinal = bet.category && categoriesWithFinishedFinals.has(bet.category)
+      // Points should only be considered if the FINAL is finished
+      const validPoints = categoryHasFinishedFinal ? bet.pointsEarned : 0
+      // Bet is correct if it earned points and the FINAL is finished
+      const isCorrect = validPoints > 0
       
       return {
         id: bet.id,
@@ -216,14 +233,14 @@ export async function GET() {
         player2: betTypeLabels[bet.type] || bet.type,
         date: bet.updatedAt?.toISOString().split('T')[0] || 'N/A',
         prediction: bet.player?.name || 'Sem palpite',
-        result: isFinished ? 'Acertou!' : 'Aguardando resultado',
-        points: bet.pointsEarned,
-        correct: isFinished ? true : null,
+        result: isCorrect ? 'Acertou!' : (categoryHasFinishedFinal ? 'Não acertou' : 'Aguardando resultado'),
+        points: validPoints,
+        correct: categoryHasFinishedFinal ? isCorrect : null,
         winnerCorrect: null,
         exactScoreCorrect: null,
         type: betTypeLabels[bet.type] || bet.type,
         category: bet.category || 'N/A',
-        isFinished: isFinished,
+        isFinished: categoryHasFinishedFinal,
         isTournamentBet: true,
         betType: bet.type
       }
