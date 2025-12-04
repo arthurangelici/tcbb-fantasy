@@ -2,9 +2,13 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { TournamentBetType } from '@prisma/client'
 // import type { Prisma } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
+
+// Tournament bet types to include in history
+const HISTORY_TOURNAMENT_BET_TYPES: TournamentBetType[] = [TournamentBetType.CHAMPION, TournamentBetType.RUNNER_UP]
 
 // Type for the session with user data
 type SessionWithUser = {
@@ -183,7 +187,52 @@ export async function GET() {
       }
     })
 
-    return NextResponse.json(formattedHistory)
+    // Get tournament bets (champion/vice-champion) for the user
+    const tournamentBets = await prisma.tournamentBet.findMany({
+      where: {
+        userId: user.id,
+        type: { in: HISTORY_TOURNAMENT_BET_TYPES }
+      },
+      include: {
+        player: true
+      },
+      orderBy: { updatedAt: 'desc' }
+    })
+
+    // Format tournament bets for the frontend
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const formattedTournamentBets = tournamentBets.map((bet: any) => {
+      const betTypeLabels: Record<string, string> = {
+        CHAMPION: 'Campeão',
+        RUNNER_UP: 'Vice-Campeão'
+      }
+      
+      const isFinished = bet.pointsEarned > 0
+      
+      return {
+        id: bet.id,
+        matchId: null,
+        player1: bet.player?.name || 'Jogador',
+        player2: betTypeLabels[bet.type] || bet.type,
+        date: bet.updatedAt?.toISOString().split('T')[0] || 'N/A',
+        prediction: bet.player?.name || 'Sem palpite',
+        result: isFinished ? 'Acertou!' : 'Aguardando resultado',
+        points: bet.pointsEarned,
+        correct: isFinished ? true : null,
+        winnerCorrect: null,
+        exactScoreCorrect: null,
+        type: betTypeLabels[bet.type] || bet.type,
+        category: bet.category || 'N/A',
+        isFinished: isFinished,
+        isTournamentBet: true,
+        betType: bet.type
+      }
+    })
+
+    // Combine both predictions and tournament bets
+    const allHistory = [...formattedHistory, ...formattedTournamentBets]
+
+    return NextResponse.json(allHistory)
   } catch (error) {
     console.error('Error fetching prediction history:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
