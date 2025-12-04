@@ -4,11 +4,11 @@ import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trophy, Target, Clock, TrendingUp } from "lucide-react"
+import { Trophy, Target, Clock, TrendingUp, Crown } from "lucide-react"
 
 interface PredictionHistory {
   id: string
-  matchId: string
+  matchId: string | null
   player1: string
   player2: string
   date: string
@@ -21,6 +21,8 @@ interface PredictionHistory {
   type: string
   category: string
   isFinished: boolean
+  isTournamentBet?: boolean
+  betType?: string
 }
 
 export default function PredictionHistoryPage() {
@@ -54,11 +56,18 @@ export default function PredictionHistoryPage() {
   }, [session])
 
   const totalPoints = predictionHistory.reduce((sum, pred) => sum + pred.points, 0)
-  const finishedPredictions = predictionHistory.filter(pred => pred.isFinished)
-  const correctWinnerPredictions = finishedPredictions.filter(pred => pred.winnerCorrect).length
-  const correctExactScorePredictions = finishedPredictions.filter(pred => pred.exactScoreCorrect).length
-  const winnerSuccessRate = finishedPredictions.length > 0 ? (correctWinnerPredictions / finishedPredictions.length * 100).toFixed(1) : 0
-  const exactScoreSuccessRate = finishedPredictions.length > 0 ? (correctExactScorePredictions / finishedPredictions.length * 100).toFixed(1) : 0
+  
+  // Filter out tournament bets for match-specific statistics
+  const matchPredictions = predictionHistory.filter(pred => !pred.isTournamentBet)
+  const finishedMatchPredictions = matchPredictions.filter(pred => pred.isFinished)
+  const correctWinnerPredictions = finishedMatchPredictions.filter(pred => pred.winnerCorrect).length
+  const correctExactScorePredictions = finishedMatchPredictions.filter(pred => pred.exactScoreCorrect).length
+  const winnerSuccessRate = finishedMatchPredictions.length > 0 ? (correctWinnerPredictions / finishedMatchPredictions.length * 100).toFixed(1) : 0
+  const exactScoreSuccessRate = finishedMatchPredictions.length > 0 ? (correctExactScorePredictions / finishedMatchPredictions.length * 100).toFixed(1) : 0
+  
+  // Count tournament bet points
+  const tournamentBets = predictionHistory.filter(pred => pred.isTournamentBet)
+  const tournamentBetPoints = tournamentBets.reduce((sum, bet) => sum + bet.points, 0)
 
   if (loading) {
     return (
@@ -103,13 +112,22 @@ export default function PredictionHistoryPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
         <Card>
           <CardContent className="flex items-center p-6">
             <Target className="h-8 w-8 text-emerald-600 mr-4" />
             <div>
               <div className="text-2xl font-bold">{totalPoints}</div>
               <p className="text-sm text-gray-600">Pontos Totais</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center p-6">
+            <Crown className="h-8 w-8 text-yellow-600 mr-4" />
+            <div>
+              <div className="text-2xl font-bold">{tournamentBetPoints}</div>
+              <p className="text-sm text-gray-600">Pontos Campeão/Vice</p>
             </div>
           </CardContent>
         </Card>
@@ -146,55 +164,103 @@ export default function PredictionHistoryPage() {
       <div className="space-y-4">
         {predictionHistory.length > 0 ? (
           predictionHistory.map((prediction) => (
-            <Card key={prediction.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">
-                      {prediction.player1} vs {prediction.player2}
-                    </CardTitle>
-                    <CardDescription>
-                      {new Date(prediction.date).toLocaleDateString('pt-BR')} • {prediction.type} • Cat. {prediction.category}
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {prediction.isFinished ? (
-                      <div className="flex items-center gap-1">
-                        {prediction.winnerCorrect !== null && (
-                          <Badge variant={prediction.winnerCorrect ? "default" : "destructive"}>
-                            {prediction.winnerCorrect ? "✓ Vencedor" : "✗ Vencedor"}
-                          </Badge>
-                        )}
-                        {prediction.exactScoreCorrect !== null && (
-                          <Badge variant={prediction.exactScoreCorrect ? "default" : "destructive"}>
-                            {prediction.exactScoreCorrect ? "✓ Placar" : "✗ Placar"}
-                          </Badge>
-                        )}
+            prediction.isTournamentBet ? (
+              // Tournament bet card with special styling
+              <Card key={prediction.id} className="bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Crown className="h-5 w-5 text-yellow-600" />
+                      <div>
+                        <CardTitle className="text-lg text-yellow-800">
+                          {prediction.type} - Cat. {prediction.category}
+                        </CardTitle>
+                        <CardDescription className="text-yellow-700">
+                          {new Date(prediction.date).toLocaleDateString('pt-BR')} • Aposta de Torneio
+                        </CardDescription>
                       </div>
-                    ) : (
-                      <Badge variant="secondary">
-                        Aguardando jogo
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {prediction.isFinished ? (
+                        <Badge className="bg-emerald-600">
+                          ✓ Acertou!
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-yellow-200 text-yellow-800">
+                          Aguardando resultado
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="border-yellow-600 text-yellow-800">
+                        {prediction.points} pts
                       </Badge>
-                    )}
-                    <Badge variant="outline">
-                      {prediction.points} pts
-                    </Badge>
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Seu Palpite:</p>
-                    <p className="font-medium">{prediction.prediction}</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-yellow-700">Seu Palpite:</p>
+                      <p className="font-medium text-yellow-900">{prediction.prediction}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-yellow-700">Resultado:</p>
+                      <p className="font-medium text-yellow-900">{prediction.result}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Resultado:</p>
-                    <p className="font-medium">{prediction.result}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              // Regular match prediction card
+              <Card key={prediction.id}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg">
+                        {prediction.player1} vs {prediction.player2}
+                      </CardTitle>
+                      <CardDescription>
+                        {new Date(prediction.date).toLocaleDateString('pt-BR')} • {prediction.type} • Cat. {prediction.category}
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {prediction.isFinished ? (
+                        <div className="flex items-center gap-1">
+                          {prediction.winnerCorrect !== null && (
+                            <Badge variant={prediction.winnerCorrect ? "default" : "destructive"}>
+                              {prediction.winnerCorrect ? "✓ Vencedor" : "✗ Vencedor"}
+                            </Badge>
+                          )}
+                          {prediction.exactScoreCorrect !== null && (
+                            <Badge variant={prediction.exactScoreCorrect ? "default" : "destructive"}>
+                              {prediction.exactScoreCorrect ? "✓ Placar" : "✗ Placar"}
+                            </Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <Badge variant="secondary">
+                          Aguardando jogo
+                        </Badge>
+                      )}
+                      <Badge variant="outline">
+                        {prediction.points} pts
+                      </Badge>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Seu Palpite:</p>
+                      <p className="font-medium">{prediction.prediction}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Resultado:</p>
+                      <p className="font-medium">{prediction.result}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )
           ))
         ) : (
           <div className="text-center py-12">
