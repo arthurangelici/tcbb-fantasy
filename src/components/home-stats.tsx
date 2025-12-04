@@ -14,17 +14,21 @@ interface TournamentStats {
 export function HomeStats() {
   const [stats, setStats] = useState<TournamentStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     async function fetchStats() {
       try {
         const response = await fetch('/api/tournament')
-        if (response.ok) {
-          const data = await response.json()
-          setStats(data.stats)
+        if (!response.ok) {
+          setError(true)
+          return
         }
-      } catch (error) {
-        console.error('Error fetching stats:', error)
+        const data = await response.json()
+        setStats(data.stats)
+      } catch (err) {
+        console.error('Error fetching stats:', err)
+        setError(true)
       } finally {
         setLoading(false)
       }
@@ -51,11 +55,14 @@ export function HomeStats() {
     )
   }
 
+  // Show a default fallback if there's an error or no stats
+  const playerCount = error || !stats ? 'Jogadores' : `${stats.activePlayers} Jogadores`
+
   return (
     <Card className="text-center">
       <CardHeader>
         <Users className="h-12 w-12 text-blue-600 mx-auto mb-2" />
-        <CardTitle>{stats?.activePlayers || 0} Jogadores</CardTitle>
+        <CardTitle>{playerCount}</CardTitle>
       </CardHeader>
       <CardContent>
         <CardDescription>
