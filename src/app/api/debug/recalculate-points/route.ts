@@ -112,7 +112,7 @@ export async function POST() {
         // If this is a FINAL match, recalculate tournament bet points (CHAMPION and RUNNER_UP)
         if (match.round === 'FINAL') {
           const championId = match.winnerId; // Winner of the final is the champion
-          const runnerUpId = matchWinner === 'player1' ? match.player2Id : match.player1Id; // Loser of the final is the runner-up
+          const runnerUpId = match.winnerId === match.player1Id ? match.player2Id : match.player1Id; // Loser of the final is the runner-up
           const matchCategory = match.category;
 
           console.log(`Processing FINAL match for category ${matchCategory}: Champion=${championId}, Runner-up=${runnerUpId}`);
