@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { calculatePredictionPoints } from '@/lib/utils'
+import { calculatePredictionPoints, getTournamentBetPoints } from '@/lib/utils'
 import { Prisma } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
@@ -54,6 +54,7 @@ export async function POST() {
 
     let totalUpdated = 0;
     let totalPointsAwarded = 0;
+    let tournamentBetsUpdated = 0;
 
     // Use transaction to ensure consistency
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -107,6 +108,46 @@ export async function POST() {
           totalPointsAwarded += points;
           totalUpdated++;
         }
+
+        // If this is a FINAL match, recalculate tournament bet points (CHAMPION and RUNNER_UP)
+        if (match.round === 'FINAL') {
+          const championId = match.winnerId; // Winner of the final is the champion
+          const runnerUpId = match.winnerId === match.player1Id ? match.player2Id : match.player1Id; // Loser of the final is the runner-up
+          const matchCategory = match.category;
+
+          console.log(`Processing FINAL match for category ${matchCategory}: Champion=${championId}, Runner-up=${runnerUpId}`);
+
+          // Find all tournament bets for this category (CHAMPION and RUNNER_UP)
+          const tournamentBets = await tx.tournamentBet.findMany({
+            where: {
+              category: matchCategory,
+              type: { in: ['CHAMPION', 'RUNNER_UP'] }
+            }
+          });
+
+          for (const bet of tournamentBets) {
+            let pointsToAward = 0;
+
+            if (bet.type === 'CHAMPION' && bet.playerId === championId) {
+              pointsToAward = getTournamentBetPoints('CHAMPION');
+            } else if (bet.type === 'RUNNER_UP' && bet.playerId === runnerUpId) {
+              pointsToAward = getTournamentBetPoints('RUNNER_UP');
+            }
+
+            // Update the tournament bet with earned points
+            await tx.tournamentBet.update({
+              where: { id: bet.id },
+              data: { pointsEarned: pointsToAward }
+            });
+
+            if (pointsToAward > 0) {
+              tournamentBetsUpdated++;
+              totalPointsAwarded += pointsToAward;
+            }
+          }
+
+          console.log(`Tournament bet points calculation for ${matchCategory}: ${tournamentBets.length} bets processed`);
+        }
       }
 
       // Recalculate total points for all users
@@ -143,6 +184,7 @@ export async function POST() {
       stats: {
         finishedMatches: finishedMatches.length,
         predictionsUpdated: totalUpdated,
+        tournamentBetsUpdated,
         totalPointsAwarded
       }
     });
