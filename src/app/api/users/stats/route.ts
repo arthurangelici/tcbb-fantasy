@@ -197,7 +197,20 @@ export async function GET() {
       }
     })
 
+    // Get categories that have a finished FINAL match
+    // This is used to filter tournament bets that should show points
+    const finishedFinalMatches = await prisma.match.findMany({
+      where: {
+        round: 'FINAL',
+        status: 'FINISHED',
+        winnerId: { not: null }
+      },
+      select: { category: true }
+    })
+    const categoriesWithFinishedFinals = new Set<string>(finishedFinalMatches.map(m => m.category))
+
     // Get tournament bets (champion/vice-champion) with points earned
+    // Only include bets for categories where the FINAL match has been finished
     const tournamentBets = await prisma.tournamentBet.findMany({
       where: {
         userId: user.id,
@@ -211,7 +224,12 @@ export async function GET() {
     })
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const formattedTournamentBets = tournamentBets.map((bet: any) => {
+    const formattedTournamentBets = tournamentBets
+      // Filter to only include bets for categories with a finished FINAL
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((bet: any) => bet.category && categoriesWithFinishedFinals.has(bet.category))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((bet: any) => {
       const betTypeLabels: Record<string, string> = {
         CHAMPION: 'Campeão',
         RUNNER_UP: 'Vice-Campeão'
