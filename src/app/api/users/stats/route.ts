@@ -2,9 +2,13 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { TournamentBetType } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0 // Don't cache this route
+
+// Tournament bet types that are shown in dashboard recent results
+const DASHBOARD_TOURNAMENT_BET_TYPES: TournamentBetType[] = [TournamentBetType.CHAMPION, TournamentBetType.RUNNER_UP]
 
 // Type for the session with user data
 type SessionWithUser = {
@@ -188,7 +192,43 @@ export async function GET() {
         userPrediction: predictedWinner || 'Sem palpite',
         points: prediction?.pointsEarned || 0,
         correct: isFinished ? prediction?.pointsEarned > 0 : null, // null for unfinished matches
-        isFinished: isFinished
+        isFinished: isFinished,
+        isTournamentBet: false
+      }
+    })
+
+    // Get tournament bets (champion/vice-champion) with points earned
+    const tournamentBets = await prisma.tournamentBet.findMany({
+      where: {
+        userId: user.id,
+        type: { in: DASHBOARD_TOURNAMENT_BET_TYPES },
+        pointsEarned: { gt: 0 }
+      },
+      include: {
+        player: true
+      },
+      orderBy: { updatedAt: 'desc' }
+    })
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const formattedTournamentBets = tournamentBets.map((bet: any) => {
+      const betTypeLabels: Record<string, string> = {
+        CHAMPION: 'Campeão',
+        RUNNER_UP: 'Vice-Campeão'
+      }
+      
+      return {
+        id: bet.id,
+        player1: bet.player?.name || 'Jogador',
+        player2: betTypeLabels[bet.type] || bet.type,
+        result: bet.pointsEarned > 0 ? 'Acertou!' : 'Aguardando',
+        userPrediction: bet.player?.name || 'Sem palpite',
+        points: bet.pointsEarned,
+        correct: bet.pointsEarned > 0,
+        isFinished: bet.pointsEarned > 0,
+        isTournamentBet: true,
+        betType: bet.type,
+        category: bet.category
       }
     })
 
@@ -214,7 +254,8 @@ export async function GET() {
       exactScoreSuccessRate: Number(exactScoreSuccessRate.toFixed(1)),
       streak,
       upcomingMatches,
-      recentMatches: formattedRecentMatches
+      recentMatches: formattedRecentMatches,
+      tournamentBets: formattedTournamentBets
     }
 
     const response = NextResponse.json({

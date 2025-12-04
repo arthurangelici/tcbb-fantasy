@@ -5,8 +5,22 @@ import { redirect } from "next/navigation"
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Trophy, Target, TrendingUp, Calendar, Award, RefreshCw } from "lucide-react"
+import { Trophy, Target, TrendingUp, Calendar, Award, RefreshCw, Crown } from "lucide-react"
 import Link from "next/link"
+
+interface TournamentBet {
+  id: string
+  player1: string
+  player2: string
+  result: string
+  userPrediction: string
+  points: number
+  correct: boolean
+  isFinished: boolean
+  isTournamentBet: boolean
+  betType: string
+  category: string
+}
 
 interface UserStats {
   totalPoints: number
@@ -30,6 +44,7 @@ interface UserStats {
     correct: boolean | null
     isFinished: boolean
   }>
+  tournamentBets: TournamentBet[]
 }
 
 export default function DashboardPage() {
@@ -269,37 +284,64 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {stats.recentMatches.length > 0 ? (
-                stats.recentMatches.map((match) => (
-                  <div key={match.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">
-                        {match.player1} vs {match.player2}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        Resultado: {match.result} • Palpite: {match.userPrediction}
+              {/* Tournament Bets (Champion/Vice-Champion) */}
+              {stats.tournamentBets && stats.tournamentBets.length > 0 && (
+                stats.tournamentBets.map((bet) => (
+                  <div key={bet.id} className="flex items-center justify-between p-3 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg border border-yellow-200">
+                    <div className="flex items-center gap-2 flex-1">
+                      <Crown className="h-4 w-4 text-yellow-600" />
+                      <div>
+                        <div className="text-sm font-medium text-yellow-800">
+                          {bet.betType === 'CHAMPION' ? 'Campeão' : 'Vice-Campeão'} - Cat. {bet.category}
+                        </div>
+                        <div className="text-xs text-yellow-700">
+                          Palpite: {bet.userPrediction}
+                        </div>
                       </div>
                     </div>
-                    <div className={`flex items-center space-x-2 ${
-                      match.isFinished 
-                        ? (match.correct ? 'text-emerald-600' : 'text-red-600')
-                        : 'text-blue-600'
-                    }`}>
+                    <div className="flex items-center space-x-2 text-emerald-600">
                       <span className="text-sm font-medium">
-                        {match.isFinished 
-                          ? (match.correct ? `+${match.points}` : '0') 
-                          : 'Pendente'
-                        } {match.isFinished ? 'pts' : ''}
+                        +{bet.points} pts
                       </span>
-                      <div className={`w-2 h-2 rounded-full ${
-                        match.isFinished 
-                          ? (match.correct ? 'bg-emerald-600' : 'bg-red-600')
-                          : 'bg-blue-600'
-                      }`} />
+                      <div className="w-2 h-2 rounded-full bg-emerald-600" />
                     </div>
                   </div>
                 ))
-              ) : (
+              )}
+              
+              {/* Recent Match Predictions */}
+              {stats.recentMatches.map((match) => (
+                <div key={match.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">
+                      {match.player1} vs {match.player2}
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      Resultado: {match.result} • Palpite: {match.userPrediction}
+                    </div>
+                  </div>
+                  <div className={`flex items-center space-x-2 ${
+                    match.isFinished 
+                      ? (match.correct ? 'text-emerald-600' : 'text-red-600')
+                      : 'text-blue-600'
+                  }`}>
+                    <span className="text-sm font-medium">
+                      {match.isFinished 
+                        ? (match.correct ? `+${match.points}` : '0') 
+                        : 'Pendente'
+                      } {match.isFinished ? 'pts' : ''}
+                    </span>
+                    <div className={`w-2 h-2 rounded-full ${
+                      match.isFinished 
+                        ? (match.correct ? 'bg-emerald-600' : 'bg-red-600')
+                        : 'bg-blue-600'
+                    }`} />
+                  </div>
+                </div>
+              ))}
+
+              {/* Empty state when no results exist */}
+              {stats.recentMatches.length === 0 && (!stats.tournamentBets || stats.tournamentBets.length === 0) && (
                 <div className="text-center text-gray-500 py-4">
                   Nenhum resultado recente
                 </div>
